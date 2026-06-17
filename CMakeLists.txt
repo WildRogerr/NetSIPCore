@@ -8,3 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(NetSIPCore
     src/main.cpp
 )
+
+include_directories(
+    third_party/pjproject/pjsip/include
+)
