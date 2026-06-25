@@ -10,11 +10,6 @@ int main() {
 
     try {
         core.init();
-        // core.registerAccount(
-        //     "192.168.124.96",
-        //     "343448789",
-        //     "1111"
-        // );
         core.run();
         core.destroy();
 
@@ -23,4 +18,5 @@ int main() {
     }
 
     return 0;
+    
 }

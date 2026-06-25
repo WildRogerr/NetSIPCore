@@ -48,13 +48,7 @@ void TCPServer::run(uint16_t port)
         serverAddr.sin_port = htons(port);
         serverAddr.sin_addr.s_addr = INADDR_ANY;
 
-        if (
-            bind(
-                serverSocket,
-                (sockaddr*)&serverAddr,
-                sizeof(serverAddr)
-            ) == SOCKET_ERROR
-        )
+        if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
         {
             std::cout
                 << "bind() failed"
@@ -164,9 +158,32 @@ void TCPServer::stop()
 }
 
 
-void TCPServer::setOnMessage(
-    std::function<void(const std::string&)> cb
-)
+void TCPServer::setOnMessage(std::function<void(const std::string&)> cb)
 {
     onMessage = cb;
+}
+
+
+void TCPServer::sendMessage(const std::string& msg)
+{
+
+    if (clientSocket == INVALID_SOCKET)
+    {
+        return;
+    }
+
+    std::string data = msg + "\n";
+
+    ::send(
+        clientSocket,
+        data.c_str(),
+        (int)data.size(),
+        0
+    );
+
+    std::cout
+        << "[TCP SEND] "
+        << msg
+        << std::endl;
+        
 }

@@ -14,9 +14,8 @@ public:
     void init();
     void run(uint16_t port);
     void stop();
-    void setOnMessage(
-        std::function<void(const std::string&)> cb
-    );
+    void setOnMessage(std::function<void(const std::string&)> cb);
+    void sendMessage(const std::string& msg);
 
 private:
 

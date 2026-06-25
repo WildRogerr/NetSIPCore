@@ -10,6 +10,7 @@ add_executable(SIPCore
     src/SIPCore.cpp
     src/sip/Account.cpp
     src/tcp/TCPServer.cpp
+    src/utils/Json.cpp
 )
 
 target_include_directories(SIPCore PRIVATE

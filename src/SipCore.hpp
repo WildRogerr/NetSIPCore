@@ -3,6 +3,7 @@
 #include <pjsua2.hpp>
 #include "sip/Account.hpp"
 #include "tcp/TcpServer.hpp"
+#include "utils/Json.hpp"
 
 
 
@@ -15,14 +16,15 @@ class SIPCore {
         void destroy();
         void registerAccount(
             const std::string& server,
-            const std::string& login,
+            const std::string& username,
             const std::string& password
         );
-        void handleTcpMessage(const std::string& msg);
+        void SIPCore::handleTcpMessage(const std::string& msg);
 
     private:
         pj::Endpoint endpoint;
         bool initialized = false;
         std::unique_ptr<SIPAccount> account;
         TCPServer tcpServer;
+
 };
