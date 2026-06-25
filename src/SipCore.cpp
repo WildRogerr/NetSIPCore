@@ -73,33 +73,33 @@ void SIPCore::registerAccount(
     }
 
     account = std::make_unique<SIPAccount>();
-    account->setRegStateCallback(
+
+    account->setStateCallback(
         [this](
-            const std::string& uri,
-            const std::string& state
+            const std::string& username,
+            const std::string& state,
+            const std::string& remote
         )
         {
             std::cout
-                << "[REG CALLBACK] "
-                << uri
+                << "[STATE CALLBACK] "
+                << username
                 << " -> "
                 << state
                 << std::endl;
 
-            std::string username =
-                uri.substr(
-                    4,
-                    uri.find('@') - 4
-                );
+            sendState(
+                username,
+                state,
+                remote
+            );
+        }
+    );
 
-            std::string json =
-                "{\"username\":\"" +
-                username +
-                "\",\"state\":\"" +
-                state +
-                "\"}";
-
-            tcpServer.sendMessage(json);
+    account->setCallCallback(
+        [this](std::shared_ptr<SIPCall> call)
+        {
+            setupCall(call);
         }
     );
 
@@ -135,6 +135,77 @@ void SIPCore::registerAccount(
             << std::endl;
     }
 
+}
+
+
+void SIPCore::setupCall(std::shared_ptr<SIPCall > call)
+{
+    int callId = call->getCallId();
+
+    calls[callId] = call;
+
+    call->stateCallback =
+        [this, callId](
+            const std::string& local,
+            const std::string& state,
+            const std::string& remote
+        )
+        {
+            std::string username =
+                local.substr(
+                    4,
+                    local.find('@') - 4
+                );
+
+            sendState(
+                username,
+                state,
+                remote
+            );
+
+            if (state == "disconnected")
+            {
+                std::cout
+                    << "CALL REMOVED: "
+                    << callId
+                    << std::endl;
+
+                calls.erase(callId);
+            }
+        };
+
+    std::cout
+        << "CALL STORED: "
+        << callId
+        << std::endl;
+}
+
+
+void SIPCore::sendState(
+    const std::string& username,
+    const std::string& state,
+    const std::string& remote
+)
+{
+    std::string json =
+        "{"
+        "\"username\":\"" + username + "\","
+        "\"state\":\"" + state + "\"";
+
+    if (!remote.empty())
+    {
+        json +=
+            ",\"remote\":\"" + remote + "\"";
+    }
+
+    json += "}";
+
+    tcpServer.sendMessage(json);
+
+    std::cout
+        << "[STATE] "
+        << json
+        << std::endl;
 }
 
 

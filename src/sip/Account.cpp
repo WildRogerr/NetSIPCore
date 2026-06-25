@@ -14,7 +14,7 @@ void SIPAccount::onRegState(pj::OnRegStateParam &prm)
         << prm.reason
         << std::endl;
 
-    if (regStateCallback)
+    if (stateCallback)
     {
         std::string state = "failed";
 
@@ -23,15 +23,34 @@ void SIPAccount::onRegState(pj::OnRegStateParam &prm)
             state = "registered";
         }
 
-        regStateCallback(
-            info.uri,
-            state
+        std::string username = info.uri.substr(4, info.uri.find('@') - 4);
+
+        stateCallback(
+            username,
+            state,
+            ""
         );
     }
 }
 
 
-void SIPAccount::setRegStateCallback(std::function<void(const std::string&, const std::string&) > cb)
+void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm)
 {
-    regStateCallback = cb;
+    std::shared_ptr<SIPCall> call = std::make_shared<SIPCall>(*this, iprm.callId);
+
+    if (callCallback)
+    {
+        callCallback(call);
+    }
+}
+
+
+void SIPAccount::setStateCallback(std::function < void(const std::string&, const std::string&, const std::string&) > cb)
+{
+    stateCallback = cb;
+}
+
+void SIPAccount::setCallCallback(std::function < void(std::shared_ptr<SIPCall >) > cb)
+{
+    callCallback = cb;
 }

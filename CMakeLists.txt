@@ -9,8 +9,10 @@ add_executable(SIPCore
     src/main.cpp
     src/SIPCore.cpp
     src/sip/Account.cpp
+    src/sip/Call.cpp
     src/tcp/TCPServer.cpp
     src/utils/Json.cpp
+    src/utils/RTP.cpp
 )
 
 target_include_directories(SIPCore PRIVATE
@@ -31,7 +33,6 @@ target_link_directories(SIPCore PRIVATE
 )
 
 target_link_libraries(SIPCore PRIVATE
-
     libpjproject-x86_64-x64-vc14-Release
     ws2_32
     winmm
@@ -41,5 +42,4 @@ target_link_libraries(SIPCore PRIVATE
     secur32
     crypt32
     iphlpapi
-
 )

@@ -4,9 +4,7 @@
 
 
 
-TCPServer::TCPServer()
-{
-}
+TCPServer::TCPServer() {}
 
 
 void TCPServer::init()
@@ -185,5 +183,5 @@ void TCPServer::sendMessage(const std::string& msg)
         << "[TCP SEND] "
         << msg
         << std::endl;
-        
+
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <unordered_map>
 #include <pjsua2.hpp>
 #include "sip/Account.hpp"
 #include "tcp/TcpServer.hpp"
@@ -19,12 +20,19 @@ class SIPCore {
             const std::string& username,
             const std::string& password
         );
-        void SIPCore::handleTcpMessage(const std::string& msg);
+        void sendState(
+            const std::string& username,
+            const std::string& state,
+            const std::string& remote = ""
+        );
+        void setupCall(std::shared_ptr<SIPCall> call);
+        void handleTcpMessage(const std::string& msg);
 
     private:
         pj::Endpoint endpoint;
         bool initialized = false;
         std::unique_ptr<SIPAccount> account;
         TCPServer tcpServer;
+        std::unordered_map < int,std::shared_ptr <SIPCall> > calls;
 
 };
