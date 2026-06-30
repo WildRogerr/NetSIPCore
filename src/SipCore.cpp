@@ -11,6 +11,7 @@ SIPCore::~SIPCore()
     destroy();
 }
 
+
 void SIPCore::destroy()
 {
     if (!initialized)
@@ -87,16 +88,6 @@ void SIPCore::run()
         endpoint.libHandleEvents(10);
         pj_thread_sleep(10);
     }
-
-}
-
-
-void SIPCore::destroy()
-{
-
-    tcpServer.stop();
-    endpoint.libDestroy();
-    std::cout << "SIPCore destroyed" << std::endl;
 
 }
 
