@@ -86,6 +86,9 @@ void SIPCore::run()
     while (initialized)
     {
         endpoint.libHandleEvents(10);
+
+        processPendingStates();
+
         pj_thread_sleep(10);
     }
 
@@ -255,20 +258,24 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
             const std::string& remote
         )
         {
-            sendState(
-                username,
-                state,
-                remote
-            );
+            {
+                std::lock_guard<std::mutex> lock(pendingMutex);
+
+                pendingStates.push({
+                    username,
+                    state,
+                    remote,
+                    "stop"
+                });
+                
+            }
 
             if (state == "disconnected")
             {
                 std::cout
-                    << "CALL REMOVED: "
+                    << "CALL DISCONNECTED: "
                     << username
                     << std::endl;
-
-                calls.erase(username);
             }
         };
 
@@ -372,6 +379,30 @@ void SIPCore::hangupCall(const std::string& username)
 
     it->second->hangup(prm);
 
+}
+
+
+void SIPCore::processPendingStates()
+{
+    std::queue<PendingState> localQueue;
+
+    {
+        std::lock_guard<std::mutex> lock(pendingMutex);
+        std::swap(localQueue, pendingStates);
+    }
+
+    while (!localQueue.empty())
+    {
+        auto item = localQueue.front();
+        localQueue.pop();
+
+        sendState(
+            item.username,
+            item.state,
+            item.remote,
+            item.audio_state
+        );
+    }
 }
 
 
