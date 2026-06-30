@@ -3,6 +3,7 @@
 #include <string>
 #include <thread>
 #include <winsock2.h>
+#include <mutex>
 
 
 
@@ -24,5 +25,6 @@ private:
     std::function<void(const std::string&)> onMessage;
     std::thread serverThread;
     bool running = false;
+    std::mutex clientMutex;
 
 };

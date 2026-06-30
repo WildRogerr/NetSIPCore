@@ -52,14 +52,14 @@ void SIPCore::init()
     pj::EpConfig ep_cfg;
     endpoint.libInit(ep_cfg);
 
+    endpoint.audDevManager().setNullDev();
+
     pj::TransportConfig transport_cfg;
     transport_cfg.port = 5060;
 
     endpoint.transportCreate(PJSIP_TRANSPORT_UDP, transport_cfg);
 
     endpoint.libStart();
-
-    endpoint.audDevManager().setNullDev();
 
     initialized = true;
 
@@ -382,15 +382,37 @@ void SIPCore::sendState(
     const std::string& audio_state
 )
 {
+    std::string cleanRemote;
+
+    if (!remote.empty())
+    {
+        size_t sipPos = remote.find("sip:");
+
+        if (sipPos != std::string::npos)
+        {
+            sipPos += 4;
+
+            size_t endPos = remote.find('@', sipPos);
+
+            if (endPos != std::string::npos)
+            {
+                cleanRemote =
+                    remote.substr(
+                        sipPos,
+                        endPos - sipPos
+                    );
+            }
+        }
+    }
 
     std::string json =
         "{"
         "\"username\":\"" + username + "\","
         "\"state\":\"" + state + "\"";
 
-    if (!remote.empty())
+    if (!cleanRemote.empty())
     {
-        json += ",\"remote\":\"" + remote + "\"";
+        json += ",\"remote\":\"" + cleanRemote + "\"";
     }
 
     json += ",\"audio_state\":\"" + audio_state + "\"";
@@ -403,7 +425,6 @@ void SIPCore::sendState(
         << "[STATE] "
         << json
         << std::endl;
-
 }
 
 

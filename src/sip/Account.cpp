@@ -34,14 +34,17 @@ void SIPAccount::onRegState(pj::OnRegStateParam &prm)
 }
 
 
-void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm)
-{
-    std::shared_ptr<SIPCall> call = std::make_shared<SIPCall>(*this, iprm.callId);
+void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm) 
+{ 
+    auto call = std::make_shared<SIPCall>( *this, iprm.callId );
 
-    if (callCallback)
-    {
-        callCallback(call);
-    }
+    pj::CallOpParam prm; prm.statusCode = PJSIP_SC_RINGING; 
+
+    call->answer(prm); 
+    if (callCallback) 
+    { 
+        callCallback(call); 
+    } 
 }
 
 
@@ -49,6 +52,7 @@ void SIPAccount::setStateCallback(std::function < void(const std::string&, const
 {
     stateCallback = cb;
 }
+
 
 void SIPAccount::setCallCallback(std::function < void(std::shared_ptr<SIPCall >) > cb)
 {

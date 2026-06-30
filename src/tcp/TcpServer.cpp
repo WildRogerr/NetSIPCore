@@ -71,15 +71,32 @@ void TCPServer::run(uint16_t port)
 
         while (running)
         {
-            clientSocket = accept(
+            SOCKET newClient = accept(
                 serverSocket,
                 nullptr,
                 nullptr
             );
 
-            if (clientSocket == INVALID_SOCKET)
+            if (newClient == INVALID_SOCKET)
             {
                 continue;
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(clientMutex);
+
+                if (clientSocket != INVALID_SOCKET)
+                {
+                    closesocket(newClient);
+
+                    std::cout
+                        << "TCP client rejected: already connected"
+                        << std::endl;
+
+                    continue;
+                }
+
+                clientSocket = newClient;
             }
 
             std::cout
@@ -92,8 +109,15 @@ void TCPServer::run(uint16_t port)
 
             while (running)
             {
+                SOCKET currentClient;
+
+                {
+                    std::lock_guard<std::mutex> lock(clientMutex);
+                    currentClient = clientSocket;
+                }
+
                 int bytes = recv(
-                    clientSocket,
+                    currentClient,
                     buffer,
                     sizeof(buffer),
                     0
@@ -105,9 +129,12 @@ void TCPServer::run(uint16_t port)
                         << "TCP client disconnected"
                         << std::endl;
 
-                    closesocket(clientSocket);
+                    {
+                        std::lock_guard<std::mutex> lock(clientMutex);
 
-                    clientSocket = INVALID_SOCKET;
+                        closesocket(clientSocket);
+                        clientSocket = INVALID_SOCKET;
+                    }
 
                     break;
                 }
@@ -147,12 +174,30 @@ void TCPServer::run(uint16_t port)
 
 void TCPServer::stop()
 {
-    
     running = false;
-    closesocket(clientSocket);
-    closesocket(serverSocket);
-    WSACleanup();
 
+    {
+        std::lock_guard<std::mutex> lock(clientMutex);
+
+        if (clientSocket != INVALID_SOCKET)
+        {
+            closesocket(clientSocket);
+            clientSocket = INVALID_SOCKET;
+        }
+    }
+
+    if (serverSocket != INVALID_SOCKET)
+    {
+        closesocket(serverSocket);
+        serverSocket = INVALID_SOCKET;
+    }
+
+    if (serverThread.joinable())
+    {
+        serverThread.join();
+    }
+
+    WSACleanup();
 }
 
 
@@ -165,19 +210,42 @@ void TCPServer::setOnMessage(std::function<void(const std::string&)> cb)
 void TCPServer::sendMessage(const std::string& msg)
 {
 
-    if (clientSocket == INVALID_SOCKET)
+    SOCKET currentClient;
+
+    {
+        std::lock_guard<std::mutex> lock(clientMutex);
+        currentClient = clientSocket;
+    }
+
+    if (currentClient == INVALID_SOCKET)
     {
         return;
     }
 
     std::string data = msg + "\n";
 
-    ::send(
-        clientSocket,
+    int result = send(
+        currentClient,
         data.c_str(),
         (int)data.size(),
         0
     );
+
+    if (result == SOCKET_ERROR)
+    {
+        std::cout
+            << "TCP send failed"
+            << std::endl;
+
+        {
+            std::lock_guard<std::mutex> lock(clientMutex);
+
+            closesocket(clientSocket);
+            clientSocket = INVALID_SOCKET;
+        }
+
+        return;
+    }
 
     std::cout
         << "[TCP SEND] "

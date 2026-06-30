@@ -26,6 +26,10 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
             state = "calling";
             break;
 
+        case PJSIP_INV_STATE_INCOMING:
+            state = "incoming";
+            break;
+
         case PJSIP_INV_STATE_EARLY:
             state = "ringing";
             break;
