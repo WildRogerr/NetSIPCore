@@ -13,6 +13,7 @@ class SIPCore {
     
     public:
         SIPCore();
+        ~SIPCore();
         void init();
         void run();
         void destroy();
@@ -33,7 +34,8 @@ class SIPCore {
         void sendState(
             const std::string& username,
             const std::string& state,
-            const std::string& remote = ""
+            const std::string& remote = "",
+            const std::string& audio_state = "stop"
         );
         void handleTcpMessage(const std::string& msg);
 

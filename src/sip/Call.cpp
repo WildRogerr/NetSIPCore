@@ -42,6 +42,10 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
     std::cout
         << "[CALL STATE] "
         << state
+        << " | "
+        << info.lastStatusCode
+        << " "
+        << info.lastReason
         << std::endl;
 
     if (stateCallback)

@@ -6,6 +6,43 @@
 SIPCore::SIPCore() {}
 
 
+SIPCore::~SIPCore()
+{
+    destroy();
+}
+
+void SIPCore::destroy()
+{
+    if (!initialized)
+    {
+        return;
+    }
+
+    initialized = false;
+
+    try
+    {
+        tcpServer.stop();
+
+        accounts.clear();
+        calls.clear();
+
+        endpoint.libDestroy();
+
+        std::cout
+            << "SIPCore destroyed"
+            << std::endl;
+    }
+    catch (pj::Error& err)
+    {
+        std::cout
+            << "DESTROY ERROR: "
+            << err.info()
+            << std::endl;
+    }
+}
+
+
 void SIPCore::init()
 {
 
@@ -20,6 +57,8 @@ void SIPCore::init()
     endpoint.transportCreate(PJSIP_TRANSPORT_UDP, transport_cfg);
 
     endpoint.libStart();
+
+    endpoint.audDevManager().setNullDev();
 
     initialized = true;
 
@@ -209,7 +248,7 @@ void SIPCore::disconnectAccount(const std::string& username)
         << "ACCOUNT REMOVED: "
         << username
         << std::endl;
-        
+
 }
 
 
@@ -256,6 +295,7 @@ void SIPCore::makeCall(
     const std::string& server
 )
 {
+
     auto it = accounts.find(username);
 
     if (it == accounts.end())
@@ -263,10 +303,10 @@ void SIPCore::makeCall(
         return;
     }
 
-    auto call =
-        std::make_shared<SIPCall>(
-            *it->second
-        );
+    auto call = std::make_shared<SIPCall>(
+        *it->second,
+        PJSUA_INVALID_ID
+    );
 
     setupCall(
         username,
@@ -274,6 +314,9 @@ void SIPCore::makeCall(
     );
 
     pj::CallOpParam prm(true);
+
+    prm.opt.audioCount = 1;
+    prm.opt.videoCount = 0;
 
     std::string uri =
         "sip:" +
@@ -306,6 +349,7 @@ void SIPCore::makeCall(
 
 void SIPCore::answerCall(const std::string& username)
 {
+
     auto it = calls.find(username);
 
     if (it == calls.end())
@@ -318,11 +362,13 @@ void SIPCore::answerCall(const std::string& username)
     prm.statusCode = PJSIP_SC_OK;
 
     it->second->answer(prm);
+
 }
 
 
 void SIPCore::hangupCall(const std::string& username)
 {
+
     auto it =
     calls.find(username);
 
@@ -341,9 +387,11 @@ void SIPCore::hangupCall(const std::string& username)
 void SIPCore::sendState(
     const std::string& username,
     const std::string& state,
-    const std::string& remote
+    const std::string& remote,
+    const std::string& audio_state
 )
 {
+
     std::string json =
         "{"
         "\"username\":\"" + username + "\","
@@ -351,9 +399,10 @@ void SIPCore::sendState(
 
     if (!remote.empty())
     {
-        json +=
-            ",\"remote\":\"" + remote + "\"";
+        json += ",\"remote\":\"" + remote + "\"";
     }
+
+    json += ",\"audio_state\":\"" + audio_state + "\"";
 
     json += "}";
 
@@ -363,13 +412,13 @@ void SIPCore::sendState(
         << "[STATE] "
         << json
         << std::endl;
+
 }
 
 
 void SIPCore::handleTcpMessage(const std::string& msg)
 {
-    JsonCommand cmd =
-    Json::parse(msg);
+    JsonCommand cmd = Json::parse(msg);
 
     if (!cmd.valid)
     {
