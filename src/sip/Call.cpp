@@ -6,6 +6,14 @@
 SIPCall::SIPCall(pj::Account& acc,int call_id):Call(acc, call_id) {}
 
 
+SIPCall::~SIPCall()
+{
+    std::cout
+        << "CALL DESTROYED"
+        << std::endl;
+}
+
+
 void SIPCall::onCallState(pj::OnCallStateParam &prm)
 {
     pj::CallInfo info = getInfo();
