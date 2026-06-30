@@ -9,7 +9,7 @@ struct JsonCommand
     std::string server;
     std::string username;
     std::string password;
-    std::string calling_number;
+    std::string remote;
     std::string current_state;
     std::string audio_state;
     bool valid = false;

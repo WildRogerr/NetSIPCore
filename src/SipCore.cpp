@@ -3,8 +3,7 @@
 
 
 
-SIPCore::SIPCore() {
-}
+SIPCore::SIPCore() {}
 
 
 void SIPCore::init()
@@ -42,20 +41,24 @@ void SIPCore::init()
 
 void SIPCore::run()
 {
+
     std::cout << "RUN LOOP START" << std::endl;
     while (initialized)
     {
         endpoint.libHandleEvents(10);
         pj_thread_sleep(10);
     }
+
 }
 
 
 void SIPCore::destroy()
 {
+
     tcpServer.stop();
     endpoint.libDestroy();
     std::cout << "SIPCore destroyed" << std::endl;
+
 }
 
 
@@ -68,11 +71,16 @@ void SIPCore::registerAccount(
 
     if (!initialized)
     {
-        std::cout << "ERROR: SIPCore not initialized" << std::endl;
+    std::cout
+    << "ERROR: SIPCore not initialized"
+    << std::endl;
+
         return;
     }
 
-    account = std::make_unique<SIPAccount>();
+    auto account = std::make_shared<SIPAccount>();
+
+    accounts[username] = account;
 
     account->setStateCallback(
         [this](
@@ -97,18 +105,26 @@ void SIPCore::registerAccount(
     );
 
     account->setCallCallback(
-        [this](std::shared_ptr<SIPCall> call)
+        [this, username](
+            std::shared_ptr<SIPCall> call
+        )
         {
-            setupCall(call);
+            setupCall(
+                username,
+                call
+            );
         }
     );
 
     try
     {
-    pj::AccountConfig config;
+        pj::AccountConfig config;
 
         config.idUri =
-            "sip:" + username + "@" + server;
+            "sip:" +
+            username +
+            "@" +
+            server;
 
         config.regConfig.registrarUri =
             "sip:" + server;
@@ -121,11 +137,15 @@ void SIPCore::registerAccount(
             password
         );
 
-        config.sipConfig.authCreds.push_back(cred);
+        config.sipConfig.authCreds.push_back(
+            cred
+        );
 
         account->create(config);
 
-        std::cout << "Register request sent" << std::endl;
+        std::cout
+            << "Register request sent"
+            << std::endl;
     }
     catch (pj::Error& err)
     {
@@ -138,25 +158,73 @@ void SIPCore::registerAccount(
 }
 
 
-void SIPCore::setupCall(std::shared_ptr<SIPCall > call)
+void SIPCore::disconnectAccount(const std::string& username)
 {
-    int callId = call->getCallId();
 
-    calls[callId] = call;
+    auto it = accounts.find(username);
+
+    if (it == accounts.end())
+    {
+        return;
+    }
+
+    auto callIt = calls.find(username);
+
+    if (callIt != calls.end())
+    {
+        try
+        {
+            pj::CallOpParam prm;
+
+            callIt->second->hangup(prm);
+        }
+        catch (...)
+        {
+        }
+
+        calls.erase(callIt);
+
+        std::cout
+            << "CALL REMOVED: "
+            << username
+            << std::endl;
+    }
+
+    try
+    {
+        it->second->shutdown();
+    }
+    catch (...)
+    {
+    }
+
+    accounts.erase(it);
+
+    sendState(
+        username,
+        "disconnected"
+    );
+
+    std::cout
+        << "ACCOUNT REMOVED: "
+        << username
+        << std::endl;
+        
+}
+
+
+void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> call)
+{
+
+    calls[username] = call;
 
     call->stateCallback =
-        [this, callId](
+        [this, username](
             const std::string& local,
             const std::string& state,
             const std::string& remote
         )
         {
-            std::string username =
-                local.substr(
-                    4,
-                    local.find('@') - 4
-                );
-
             sendState(
                 username,
                 state,
@@ -167,17 +235,106 @@ void SIPCore::setupCall(std::shared_ptr<SIPCall > call)
             {
                 std::cout
                     << "CALL REMOVED: "
-                    << callId
+                    << username
                     << std::endl;
 
-                calls.erase(callId);
+                calls.erase(username);
             }
         };
 
     std::cout
         << "CALL STORED: "
-        << callId
+        << username
         << std::endl;
+
+}
+
+
+void SIPCore::makeCall(
+    const std::string& username,
+    const std::string& number,
+    const std::string& server
+)
+{
+    auto it = accounts.find(username);
+
+    if (it == accounts.end())
+    {
+        return;
+    }
+
+    auto call =
+        std::make_shared<SIPCall>(
+            *it->second
+        );
+
+    setupCall(
+        username,
+        call
+    );
+
+    pj::CallOpParam prm(true);
+
+    std::string uri =
+        "sip:" +
+        number +
+        "@" +
+        server;
+
+    try
+    {
+        call->makeCall(
+            uri,
+            prm
+        );
+
+        std::cout
+            << "CALL STARTED: "
+            << number
+            << std::endl;
+    }
+    catch (pj::Error& err)
+    {
+        std::cout
+            << "CALL ERROR: "
+            << err.info()
+            << std::endl;
+    }
+
+}
+
+
+void SIPCore::answerCall(const std::string& username)
+{
+    auto it = calls.find(username);
+
+    if (it == calls.end())
+    {
+        return;
+    }
+
+    pj::CallOpParam prm;
+
+    prm.statusCode = PJSIP_SC_OK;
+
+    it->second->answer(prm);
+}
+
+
+void SIPCore::hangupCall(const std::string& username)
+{
+    auto it =
+    calls.find(username);
+
+    if (it == calls.end())
+    {
+        return;
+    }
+
+    pj::CallOpParam prm;
+
+    it->second->hangup(prm);
+
 }
 
 
@@ -211,8 +368,8 @@ void SIPCore::sendState(
 
 void SIPCore::handleTcpMessage(const std::string& msg)
 {
-
-    JsonCommand cmd = Json::parse(msg);
+    JsonCommand cmd =
+    Json::parse(msg);
 
     if (!cmd.valid)
     {
@@ -225,14 +382,38 @@ void SIPCore::handleTcpMessage(const std::string& msg)
 
     if (cmd.command == "registration")
     {
-        std::cout
-            << "REGISTER COMMAND"
-            << std::endl;
-
         registerAccount(
             cmd.server,
             cmd.username,
             cmd.password
+        );
+    }
+
+    if (cmd.command == "disconnect")
+    {
+        disconnectAccount(cmd.username);
+    }
+
+    if (cmd.command == "call")
+    {
+        makeCall(
+            cmd.username,
+            cmd.remote,
+            cmd.server
+        );
+    }
+
+    if (cmd.command == "answer")
+    {
+        answerCall(
+            cmd.username
+        );
+    }
+
+    if (cmd.command == "hangup")
+    {
+        hangupCall(
+            cmd.username
         );
     }
 

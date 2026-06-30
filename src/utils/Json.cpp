@@ -59,8 +59,8 @@ JsonCommand Json::parse(const std::string& raw)
     cmd.password =
         extract(raw, "password");
 
-    cmd.calling_number =
-        extract(raw, "calling_number");
+    cmd.remote =
+        extract(raw, "remote");
 
     cmd.current_state =
         extract(raw, "current_state");
