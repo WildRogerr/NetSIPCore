@@ -87,6 +87,8 @@ void SIPCore::run()
     {
         endpoint.libHandleEvents(10);
 
+        processPendingCommands();
+
         processPendingStates();
 
         pj_thread_sleep(10);
@@ -406,6 +408,56 @@ void SIPCore::processPendingStates()
 }
 
 
+void SIPCore::processPendingCommands()
+{
+    std::queue<PendingCommand> localQueue;
+
+    {
+        std::lock_guard<std::mutex> lock(commandMutex);
+        std::swap(localQueue, pendingCommands);
+    }
+
+    while (!localQueue.empty())
+    {
+        auto cmd = localQueue.front();
+        localQueue.pop();
+
+        if (cmd.command == "registration")
+        {
+            registerAccount(
+                cmd.server,
+                cmd.username,
+                cmd.password
+            );
+        }
+
+        else if (cmd.command == "disconnect")
+        {
+            disconnectAccount(cmd.username);
+        }
+
+        else if (cmd.command == "call")
+        {
+            makeCall(
+                cmd.username,
+                cmd.remote,
+                cmd.server
+            );
+        }
+
+        else if (cmd.command == "answer")
+        {
+            answerCall(cmd.username);
+        }
+
+        else if (cmd.command == "hangup")
+        {
+            hangupCall(cmd.username);
+        }
+    }
+}
+
+
 void SIPCore::sendState(
     const std::string& username,
     const std::string& state,
@@ -472,41 +524,15 @@ void SIPCore::handleTcpMessage(const std::string& msg)
         return;
     }
 
-    if (cmd.command == "registration")
     {
-        registerAccount(
+        std::lock_guard<std::mutex> lock(commandMutex);
+
+        pendingCommands.push({
+            cmd.command,
+            cmd.username,
             cmd.server,
-            cmd.username,
-            cmd.password
-        );
+            cmd.password,
+            cmd.remote
+        });
     }
-
-    if (cmd.command == "disconnect")
-    {
-        disconnectAccount(cmd.username);
-    }
-
-    if (cmd.command == "call")
-    {
-        makeCall(
-            cmd.username,
-            cmd.remote,
-            cmd.server
-        );
-    }
-
-    if (cmd.command == "answer")
-    {
-        answerCall(
-            cmd.username
-        );
-    }
-
-    if (cmd.command == "hangup")
-    {
-        hangupCall(
-            cmd.username
-        );
-    }
-
 }

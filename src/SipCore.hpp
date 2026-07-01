@@ -33,6 +33,7 @@ class SIPCore {
         void answerCall(const std::string& username);
         void hangupCall(const std::string& username);
         void processPendingStates();
+        void processPendingCommands();
         void sendState(
             const std::string& username,
             const std::string& state,
@@ -57,5 +58,15 @@ class SIPCore {
         };
         std::queue<PendingState> pendingStates;
         std::mutex pendingMutex;
+        struct PendingCommand
+        {
+            std::string command;
+            std::string username;
+            std::string server;
+            std::string password;
+            std::string remote;
+        };
+        std::queue<PendingCommand> pendingCommands;
+        std::mutex commandMutex;
 
 };
