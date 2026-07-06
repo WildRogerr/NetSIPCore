@@ -46,24 +46,38 @@ void SIPCore::destroy()
 
 void SIPCore::init()
 {
-
     endpoint.libCreate();
 
     pj::EpConfig ep_cfg;
-    endpoint.libInit(ep_cfg);
 
-    endpoint.audDevManager().setNullDev();
+    ep_cfg.medConfig.clockRate = 48000;
+    ep_cfg.medConfig.sndClockRate = 48000;
+    ep_cfg.medConfig.channelCount = 1;
+    ep_cfg.medConfig.audioFramePtime = 20;
+
+    endpoint.libInit(ep_cfg);
 
     pj::TransportConfig transport_cfg;
     transport_cfg.port = 5060;
 
-    endpoint.transportCreate(PJSIP_TRANSPORT_UDP, transport_cfg);
+    endpoint.transportCreate(
+        PJSIP_TRANSPORT_UDP,
+        transport_cfg
+    );
 
     endpoint.libStart();
 
+    auto& adm =
+        endpoint.audDevManager();
+
+    adm.setCaptureDev(1);
+    adm.setPlaybackDev(2);
+
     initialized = true;
 
-    std::cout << "SIPCore initialized" << std::endl;
+    std::cout
+        << "SIPCore initialized"
+        << std::endl;
 
     tcpServer.init();
 
@@ -75,7 +89,6 @@ void SIPCore::init()
     );
 
     tcpServer.run(4890);
-
 }
 
 

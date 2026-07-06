@@ -60,6 +60,39 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
         << info.lastReason
         << std::endl;
 
+    if (info.state == PJSIP_INV_STATE_DISCONNECTED)
+    {
+        try
+        {
+            if (mediaConnected && currentAudioMedia)
+            {
+                auto& adm =
+                    pj::Endpoint::instance().audDevManager();
+
+                adm.getCaptureDevMedia()
+                    .stopTransmit(*currentAudioMedia);
+
+                currentAudioMedia->stopTransmit(
+                    adm.getPlaybackDevMedia()
+                );
+
+                std::cout
+                    << "[MEDIA DISCONNECTED]"
+                    << std::endl;
+
+                mediaConnected = false;
+                currentAudioMedia = nullptr;
+            }
+        }
+        catch (pj::Error& err)
+        {
+            std::cout
+                << "MEDIA DISCONNECT ERROR: "
+                << err.info()
+                << std::endl;
+        }
+    }
+
     if (stateCallback)
     {
         stateCallback(
@@ -67,6 +100,53 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
             state,
             info.remoteUri
         );
+    }
+}
+
+
+void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
+{
+    pj::CallInfo info = getInfo();
+
+    auto& adm =
+        pj::Endpoint::instance().audDevManager();
+
+    for (unsigned i = 0; i < info.media.size(); i++)
+    {
+        auto& media = info.media[i];
+
+        if (media.type != PJMEDIA_TYPE_AUDIO)
+        {
+            continue;
+        }
+
+        if (media.status != PJSUA_CALL_MEDIA_ACTIVE)
+        {
+            continue;
+        }
+
+        try
+        {
+            currentAudioMedia =
+                (pj::AudioMedia*) getMedia(i);
+
+            adm.getCaptureDevMedia().startTransmit(*currentAudioMedia);
+
+            currentAudioMedia->startTransmit(adm.getPlaybackDevMedia());
+
+            mediaConnected = true;
+
+            std::cout
+                << "[MEDIA CONNECTED]"
+                << std::endl;
+        }
+        catch (pj::Error& err)
+        {
+            std::cout
+                << "MEDIA ERROR: "
+                << err.info()
+                << std::endl;
+        }
     }
 }
 
