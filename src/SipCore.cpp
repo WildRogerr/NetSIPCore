@@ -54,6 +54,9 @@ void SIPCore::init()
     ep_cfg.medConfig.sndClockRate = 48000;
     ep_cfg.medConfig.channelCount = 1;
     ep_cfg.medConfig.audioFramePtime = 20;
+    ep_cfg.medConfig.noVad = true;
+    // ep_cfg.logConfig.level = 6;
+    // ep_cfg.logConfig.consoleLevel = 6;
 
     endpoint.libInit(ep_cfg);
 
@@ -67,11 +70,7 @@ void SIPCore::init()
 
     endpoint.libStart();
 
-    auto& adm =
-        endpoint.audDevManager();
-
-    adm.setCaptureDev(1);
-    adm.setPlaybackDev(2);
+    auto& adm = endpoint.audDevManager();
 
     initialized = true;
 
@@ -286,7 +285,8 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
             }
 
             if (state == "disconnected")
-            {
+            {   
+                calls.erase(username);
                 std::cout
                     << "CALL DISCONNECTED: "
                     << username

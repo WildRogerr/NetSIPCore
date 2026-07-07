@@ -61,7 +61,7 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
         << std::endl;
 
     if (info.state == PJSIP_INV_STATE_DISCONNECTED)
-    {
+    {   
         try
         {
             if (mediaConnected && currentAudioMedia)
@@ -120,32 +120,67 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
             continue;
         }
 
-        if (media.status != PJSUA_CALL_MEDIA_ACTIVE)
+        // MEDIA ACTIVE
+
+        if (media.status == PJSUA_CALL_MEDIA_ACTIVE)
         {
-            continue;
+            try
+            {
+                currentAudioMedia =
+                    (pj::AudioMedia*) getMedia(i);
+
+                adm.getCaptureDevMedia()
+                    .startTransmit(*currentAudioMedia);
+
+                currentAudioMedia->startTransmit(
+                    adm.getPlaybackDevMedia()
+                );
+
+                mediaConnected = true;
+
+                std::cout
+                    << "[MEDIA CONNECTED]"
+                    << std::endl;
+            }
+            catch (pj::Error& err)
+            {
+                std::cout
+                    << "MEDIA CONNECT ERROR: "
+                    << err.info()
+                    << std::endl;
+            }
         }
 
-        try
+        // MEDIA DISCONNECTED
+
+        else
         {
-            currentAudioMedia =
-                (pj::AudioMedia*) getMedia(i);
+            try
+            {
+                if (mediaConnected && currentAudioMedia)
+                {
+                    adm.getCaptureDevMedia()
+                        .stopTransmit(*currentAudioMedia);
 
-            adm.getCaptureDevMedia().startTransmit(*currentAudioMedia);
+                    currentAudioMedia->stopTransmit(
+                        adm.getPlaybackDevMedia()
+                    );
 
-            currentAudioMedia->startTransmit(adm.getPlaybackDevMedia());
+                    std::cout
+                        << "[MEDIA DISCONNECTED]"
+                        << std::endl;
 
-            mediaConnected = true;
-
-            std::cout
-                << "[MEDIA CONNECTED]"
-                << std::endl;
-        }
-        catch (pj::Error& err)
-        {
-            std::cout
-                << "MEDIA ERROR: "
-                << err.info()
-                << std::endl;
+                    mediaConnected = false;
+                    currentAudioMedia = nullptr;
+                }
+            }
+            catch (pj::Error& err)
+            {
+                std::cout
+                    << "MEDIA DISCONNECT ERROR: "
+                    << err.info()
+                    << std::endl;
+            }
         }
     }
 }
