@@ -8,6 +8,8 @@
 #include "utils/Json.hpp"
 #include <queue>
 #include <mutex>
+#include <atomic>
+#include <thread>
 
 
 class SIPCore {
@@ -24,7 +26,7 @@ class SIPCore {
             const std::string& password
         );
         void disconnectAccount(const std::string& username);
-        void setupCall(const std::string& username,std::shared_ptr<SIPCall> call);
+        void setupCall(const std::string& username,std::shared_ptr <SIPCall> call);
         void SIPCore::makeCall(
             const std::string& username,
             const std::string& number,
@@ -41,11 +43,11 @@ class SIPCore {
             const std::string& audio_state = "stop"
         );
         void handleTcpMessage(const std::string& msg);
+        void processPendingCallRemove();
 
 
     private:
         pj::Endpoint endpoint;
-        bool initialized = false;
         std::unordered_map < std::string,std::shared_ptr <SIPAccount>> accounts;
         std::unordered_map < std::string,std::shared_ptr <SIPCall>> calls;
         TCPServer tcpServer;
@@ -56,7 +58,7 @@ class SIPCore {
             std::string remote;
             std::string audio_state;
         };
-        std::queue<PendingState> pendingStates;
+        std::queue <PendingState> pendingStates;
         std::mutex pendingMutex;
         struct PendingCommand
         {
@@ -66,7 +68,13 @@ class SIPCore {
             std::string password;
             std::string remote;
         };
-        std::queue<PendingCommand> pendingCommands;
+        std::queue <PendingCommand> pendingCommands;
         std::mutex commandMutex;
+        std::mutex callRemoveMutex;
+        std::queue <std::string> pendingCallRemove;
+        std::mutex accountsMutex;
+        std::mutex callsMutex;
+        std::atomic<bool> initialized=false;
+        std::thread workerThread;
 
 };

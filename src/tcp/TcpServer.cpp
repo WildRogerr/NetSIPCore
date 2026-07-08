@@ -156,10 +156,7 @@ void TCPServer::run(uint16_t port)
 
                     recvBuffer.erase(0, pos + 1);
 
-                    std::cout
-                        << "[TCP RECEIVE] "
-                        << msg
-                        << std::endl;
+                    // std::cout << "[TCP RECEIVE] " << msg << std::endl;
 
                     if (onMessage)
                     {
@@ -247,9 +244,6 @@ void TCPServer::sendMessage(const std::string& msg)
         return;
     }
 
-    std::cout
-        << "[TCP SEND] "
-        << msg
-        << std::endl;
+    // std::cout << "[TCP SEND] " << msg << std::endl;
 
 }

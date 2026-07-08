@@ -40,11 +40,13 @@ void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm)
 
     pj::CallOpParam prm; prm.statusCode = PJSIP_SC_RINGING; 
 
-    call->answer(prm); 
     if (callCallback) 
     { 
         callCallback(call); 
-    } 
+    }
+
+    call->answer(prm);
+    
 }
 
 

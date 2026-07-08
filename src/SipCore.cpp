@@ -12,46 +12,13 @@ SIPCore::~SIPCore()
 }
 
 
-void SIPCore::destroy()
-{
-    if (!initialized)
-    {
-        return;
-    }
-
-    initialized = false;
-
-    try
-    {
-        tcpServer.stop();
-
-        accounts.clear();
-        calls.clear();
-
-        endpoint.libDestroy();
-
-        std::cout
-            << "SIPCore destroyed"
-            << std::endl;
-    }
-    catch (pj::Error& err)
-    {
-        std::cout
-            << "DESTROY ERROR: "
-            << err.info()
-            << std::endl;
-    }
-}
-
-
 void SIPCore::init()
 {
     endpoint.libCreate();
 
     pj::EpConfig ep_cfg;
-
-    ep_cfg.medConfig.clockRate = 48000;
-    ep_cfg.medConfig.sndClockRate = 48000;
+    ep_cfg.medConfig.clockRate = 44100;
+    ep_cfg.medConfig.sndClockRate = 44100;
     ep_cfg.medConfig.channelCount = 1;
     ep_cfg.medConfig.audioFramePtime = 20;
     ep_cfg.medConfig.noVad = true;
@@ -70,7 +37,18 @@ void SIPCore::init()
 
     endpoint.libStart();
 
-    auto& adm = endpoint.audDevManager();
+    auto &adm = endpoint.audDevManager();
+
+    adm.refreshDevs();
+
+    // 
+    std::cout << adm.getCaptureDev() << std::endl;
+    std::cout << adm.getPlaybackDev() << std::endl;
+    std::cout << adm.enumDev2().size() << std::endl;
+
+    adm.setCaptureDev(PJMEDIA_AUD_DEFAULT_CAPTURE_DEV);
+    adm.setPlaybackDev(PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV);
+    //
 
     initialized = true;
 
@@ -88,6 +66,49 @@ void SIPCore::init()
     );
 
     tcpServer.run(4890);
+
+}
+
+
+void SIPCore::destroy()
+{
+    initialized = false;
+
+    if (workerThread.joinable())
+    {
+        workerThread.join();
+    }
+
+    try
+    {
+        tcpServer.stop();
+
+        {
+            std::lock_guard<std::mutex> lock(accountsMutex);
+            accounts.clear();
+        }
+
+
+        {
+            std::lock_guard<std::mutex> lock(callsMutex);
+            calls.clear();
+        }
+
+        endpoint.hangupAllCalls();
+
+        endpoint.libDestroy();
+
+        std::cout
+            << "SIPCore destroyed"
+            << std::endl;
+    }
+    catch (pj::Error& err)
+    {
+        std::cout
+            << "DESTROY ERROR: "
+            << err.info()
+            << std::endl;
+    }
 }
 
 
@@ -102,6 +123,8 @@ void SIPCore::run()
         processPendingCommands();
 
         processPendingStates();
+
+        processPendingCallRemove();
 
         pj_thread_sleep(10);
     }
@@ -127,7 +150,10 @@ void SIPCore::registerAccount(
 
     auto account = std::make_shared<SIPAccount>();
 
-    accounts[username] = account;
+    {
+        std::lock_guard<std::mutex> lock(accountsMutex);
+        accounts[username] = account;
+    }
 
     account->setStateCallback(
         [this](
@@ -153,7 +179,7 @@ void SIPCore::registerAccount(
 
     account->setCallCallback(
         [this, username](
-            std::shared_ptr<SIPCall> call
+            std::shared_ptr <SIPCall> call
         )
         {
             setupCall(
@@ -208,44 +234,62 @@ void SIPCore::registerAccount(
 void SIPCore::disconnectAccount(const std::string& username)
 {
 
-    auto it = accounts.find(username);
+    std::shared_ptr <SIPAccount> account;
+    std::shared_ptr <SIPCall> call;
 
-    if (it == accounts.end())
+
     {
-        return;
+        std::lock_guard <std::mutex> lock(accountsMutex);
+
+        auto it = accounts.find(username);
+
+        if(it == accounts.end())
+            return;
+
+        account = it->second;
     }
 
-    auto callIt = calls.find(username);
 
-    if (callIt != calls.end())
+    {
+        std::lock_guard <std::mutex> lock(callsMutex);
+
+        auto it = calls.find(username);
+
+        if(it != calls.end())
+            call = it->second;
+    }
+
+
+    if(call)
     {
         try
         {
             pj::CallOpParam prm;
-
-            callIt->second->hangup(prm);
+            call->hangup(prm);
         }
-        catch (...)
+        catch(...)
         {
         }
-
-        calls.erase(callIt);
-
-        std::cout
-            << "CALL REMOVED: "
-            << username
-            << std::endl;
     }
 
-    try
+
+    if(account)
     {
-        it->second->shutdown();
-    }
-    catch (...)
-    {
+        try
+        {
+            account->shutdown();
+        }
+        catch(...)
+        {
+        }
     }
 
-    accounts.erase(it);
+
+    {
+        std::lock_guard<std::mutex> lock(accountsMutex);
+
+        accounts.erase(username);
+    }
 
     sendState(
         username,
@@ -263,7 +307,10 @@ void SIPCore::disconnectAccount(const std::string& username)
 void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> call)
 {
 
+    {
+    std::lock_guard <std::mutex> lock(callsMutex);
     calls[username] = call;
+    }
 
     call->stateCallback =
         [this, username](
@@ -273,7 +320,7 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
         )
         {
             {
-                std::lock_guard<std::mutex> lock(pendingMutex);
+                std::lock_guard <std::mutex> lock(pendingMutex);
 
                 pendingStates.push({
                     username,
@@ -286,7 +333,8 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
 
             if (state == "disconnected")
             {   
-                calls.erase(username);
+                std::lock_guard <std::mutex> lock(callRemoveMutex);
+                pendingCallRemove.push(username);
                 std::cout
                     << "CALL DISCONNECTED: "
                     << username
@@ -308,23 +356,25 @@ void SIPCore::makeCall(
     const std::string& server
 )
 {
+    std::shared_ptr <SIPAccount> account;
 
-    auto it = accounts.find(username);
-
-    if (it == accounts.end())
     {
-        return;
+        std::lock_guard <std::mutex> lock(accountsMutex);
+
+        auto it = accounts.find(username);
+
+        if(it == accounts.end())
+            return;
+
+        account = it->second;
     }
 
     auto call = std::make_shared<SIPCall>(
-        *it->second,
+        *account,
         PJSUA_INVALID_ID
     );
 
-    setupCall(
-        username,
-        call
-    );
+    setupCall(username,call);
 
     pj::CallOpParam prm(true);
 
@@ -337,12 +387,11 @@ void SIPCore::makeCall(
         "@" +
         server;
 
+    endpoint.libHandleEvents(100);
+
     try
     {
-        call->makeCall(
-            uri,
-            prm
-        );
+        call->makeCall(uri,prm);
 
         std::cout
             << "CALL STARTED: "
@@ -362,19 +411,23 @@ void SIPCore::makeCall(
 
 void SIPCore::answerCall(const std::string& username)
 {
-
-    auto it = calls.find(username);
-
-    if (it == calls.end())
+    std::shared_ptr <SIPCall> call;
     {
-        return;
+        std::lock_guard <std::mutex> lock(callsMutex);
+
+        auto it = calls.find(username);
+
+        if(it == calls.end())
+            return;
+
+        call = it->second;
     }
 
     pj::CallOpParam prm;
 
     prm.statusCode = PJSIP_SC_OK;
 
-    it->second->answer(prm);
+    call->answer(prm);
 
 }
 
@@ -382,27 +435,64 @@ void SIPCore::answerCall(const std::string& username)
 void SIPCore::hangupCall(const std::string& username)
 {
 
-    auto it =
-    calls.find(username);
-
-    if (it == calls.end())
+    std::shared_ptr <SIPCall> call;
     {
-        return;
+        std::lock_guard <std::mutex> lock(callsMutex);
+
+        auto it = calls.find(username);
+
+        if(it == calls.end())
+            return;
+
+        call = it->second;
     }
 
     pj::CallOpParam prm;
 
-    it->second->hangup(prm);
+    call->hangup(prm);
 
+    {
+        std::lock_guard<std::mutex> lock(callsMutex);
+        calls.erase(username);
+    }
+
+}
+
+
+void SIPCore::processPendingCallRemove()
+{
+    std::queue <std::string> q;
+
+    {
+        std::lock_guard < std::mutex > lock(callRemoveMutex);
+        std::swap(q, pendingCallRemove);
+    }
+
+    while (!q.empty())
+    {
+        auto username = q.front();
+        q.pop();
+
+        {
+            std::lock_guard <std::mutex> lock(callsMutex);
+
+            calls.erase(username);
+        }
+
+        std::cout
+            << "CALL REMOVED: "
+            << username
+            << std::endl;
+    }
 }
 
 
 void SIPCore::processPendingStates()
 {
-    std::queue<PendingState> localQueue;
+    std::queue <PendingState> localQueue;
 
     {
-        std::lock_guard<std::mutex> lock(pendingMutex);
+        std::lock_guard <std::mutex> lock(pendingMutex);
         std::swap(localQueue, pendingStates);
     }
 
@@ -423,10 +513,10 @@ void SIPCore::processPendingStates()
 
 void SIPCore::processPendingCommands()
 {
-    std::queue<PendingCommand> localQueue;
+    std::queue <PendingCommand> localQueue;
 
     {
-        std::lock_guard<std::mutex> lock(commandMutex);
+        std::lock_guard <std::mutex> lock(commandMutex);
         std::swap(localQueue, pendingCommands);
     }
 
@@ -466,6 +556,11 @@ void SIPCore::processPendingCommands()
         else if (cmd.command == "hangup")
         {
             hangupCall(cmd.username);
+        }
+
+        else if (cmd.command == "destroy")
+        {
+            initialized = false;
         }
     }
 }
@@ -517,10 +612,7 @@ void SIPCore::sendState(
 
     tcpServer.sendMessage(json);
 
-    std::cout
-        << "[STATE] "
-        << json
-        << std::endl;
+    // std::cout << "[STATE] " << json << std::endl;
 }
 
 
@@ -538,7 +630,7 @@ void SIPCore::handleTcpMessage(const std::string& msg)
     }
 
     {
-        std::lock_guard<std::mutex> lock(commandMutex);
+        std::lock_guard <std::mutex> lock(commandMutex);
 
         pendingCommands.push({
             cmd.command,

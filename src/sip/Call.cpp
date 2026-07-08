@@ -126,8 +126,12 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
         {
             try
             {
-                currentAudioMedia =
-                    (pj::AudioMedia*) getMedia(i);
+                currentAudioMedia = static_cast<pj::AudioMedia*>(getMedia(i));
+
+                if (!currentAudioMedia)
+                {
+                    return;
+                }
 
                 adm.getCaptureDevMedia()
                     .startTransmit(*currentAudioMedia);
