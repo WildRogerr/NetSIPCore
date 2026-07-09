@@ -45,9 +45,6 @@ void SIPCore::init()
     std::cout << adm.getCaptureDev() << std::endl;
     std::cout << adm.getPlaybackDev() << std::endl;
     std::cout << adm.enumDev2().size() << std::endl;
-
-    adm.setCaptureDev(PJMEDIA_AUD_DEFAULT_CAPTURE_DEV);
-    adm.setPlaybackDev(PJMEDIA_AUD_DEFAULT_PLAYBACK_DEV);
     //
 
     initialized = true;
@@ -81,20 +78,19 @@ void SIPCore::destroy()
 
     try
     {
+        endpoint.hangupAllCalls();
+
         tcpServer.stop();
-
-        {
-            std::lock_guard<std::mutex> lock(accountsMutex);
-            accounts.clear();
-        }
-
 
         {
             std::lock_guard<std::mutex> lock(callsMutex);
             calls.clear();
         }
 
-        endpoint.hangupAllCalls();
+        {
+            std::lock_guard<std::mutex> lock(accountsMutex);
+            accounts.clear();
+        }
 
         endpoint.libDestroy();
 
