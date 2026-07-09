@@ -11,8 +11,6 @@ int main() {
     try {
         core.init();
         core.run();
-        core.destroy();
-
     } catch (pj::Error &e) {
         std::cout << e.info() << std::endl;
     }
