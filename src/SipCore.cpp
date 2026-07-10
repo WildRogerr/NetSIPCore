@@ -39,7 +39,10 @@ void SIPCore::init()
 
     auto &adm = endpoint.audDevManager();
 
-    adm.refreshDevs();
+    adm.setCaptureDev(-1);
+    adm.setPlaybackDev(-2);
+
+    // adm.refreshDevs();
 
     initialized = true;
 
