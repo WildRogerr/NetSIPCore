@@ -37,13 +37,6 @@ void SIPCore::init()
 
     endpoint.libStart();
 
-    auto &adm = endpoint.audDevManager();
-
-    adm.setCaptureDev(-1);
-    adm.setPlaybackDev(-2);
-
-    // adm.refreshDevs();
-
     initialized = true;
 
     std::cout
