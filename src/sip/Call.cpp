@@ -60,39 +60,6 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
         << info.lastReason
         << std::endl;
 
-    if (info.state == PJSIP_INV_STATE_DISCONNECTED)
-    {   
-        try
-        {
-            if (mediaConnected && currentAudioMedia)
-            {
-                auto& adm =
-                    pj::Endpoint::instance().audDevManager();
-
-                adm.getCaptureDevMedia()
-                    .stopTransmit(*currentAudioMedia);
-
-                currentAudioMedia->stopTransmit(
-                    adm.getPlaybackDevMedia()
-                );
-
-                std::cout
-                    << "[MEDIA DISCONNECTED]"
-                    << std::endl;
-
-                mediaConnected = false;
-                currentAudioMedia = nullptr;
-            }
-        }
-        catch (pj::Error& err)
-        {
-            std::cout
-                << "MEDIA DISCONNECT ERROR: "
-                << err.info()
-                << std::endl;
-        }
-    }
-
     if (stateCallback)
     {
         stateCallback(
@@ -108,8 +75,7 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 {
     pj::CallInfo info = getInfo();
 
-    auto& adm =
-        pj::Endpoint::instance().audDevManager();
+    auto& adm = pj::Endpoint::instance().audDevManager();
 
     for (unsigned i = 0; i < info.media.size(); i++)
     {
@@ -123,7 +89,10 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
         // MEDIA ACTIVE
 
         if (media.status == PJSUA_CALL_MEDIA_ACTIVE)
-        {
+        {   
+            if (mediaConnected)
+                continue;
+
             try
             {
                 currentAudioMedia = static_cast<pj::AudioMedia*>(getMedia(i));
@@ -159,24 +128,27 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 
         else
         {
+            if (!mediaConnected)
+                continue;
+
             try
             {
-                if (mediaConnected && currentAudioMedia)
-                {
-                    adm.getCaptureDevMedia()
-                        .stopTransmit(*currentAudioMedia);
+                auto& adm =
+                    pj::Endpoint::instance().audDevManager();
 
-                    currentAudioMedia->stopTransmit(
-                        adm.getPlaybackDevMedia()
-                    );
+                adm.getCaptureDevMedia()
+                    .stopTransmit(*currentAudioMedia);
 
-                    std::cout
-                        << "[MEDIA DISCONNECTED]"
-                        << std::endl;
+                currentAudioMedia->stopTransmit(
+                    adm.getPlaybackDevMedia()
+                );
 
-                    mediaConnected = false;
-                    currentAudioMedia = nullptr;
-                }
+                mediaConnected = false;
+                currentAudioMedia = nullptr;
+
+                std::cout
+                    << "[MEDIA DISCONNECTED]"
+                    << std::endl;
             }
             catch (pj::Error& err)
             {
@@ -184,6 +156,9 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                     << "MEDIA DISCONNECT ERROR: "
                     << err.info()
                     << std::endl;
+
+                mediaConnected = false;
+                currentAudioMedia = nullptr;
             }
         }
     }
