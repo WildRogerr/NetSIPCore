@@ -67,6 +67,8 @@ class SIPCore {
             std::string server;
             std::string password;
             std::string remote;
+            std::string device;
+            std::string audio_path;
         };
         std::queue <PendingCommand> pendingCommands;
         std::mutex commandMutex;

@@ -335,6 +335,20 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
             }
         };
 
+    call->setAudioFinishedCallback(
+        [this, username, call]()
+        {   
+            std::lock_guard <std::mutex> lock(pendingMutex);
+
+                pendingStates.push({
+                    username,
+                    "streaming",
+                    call->getRemoteUri(),
+                    "stop"
+                });
+        }
+    );
+
     std::cout
         << "CALL STORED: "
         << username
@@ -555,10 +569,64 @@ void SIPCore::processPendingCommands()
             hangupCall(cmd.username);
         }
 
+        else if (cmd.command == "mute")
+        {   
+            auto it = calls.find(cmd.username);
+
+            if (it == calls.end())
+            {
+                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
+                continue;
+            }
+
+            if (cmd.device == "speaker")
+            {
+                it->second->setSpeakerState(false);
+            } 
+            else if (cmd.device == "microphone")
+            {
+                it->second->setMicrophoneState(false);
+            }
+        }
+
+        else if (cmd.command == "unmute")
+        {
+            auto it = calls.find(cmd.username);
+            
+            if (it == calls.end())
+            {
+                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
+                continue;
+            }
+
+            if (cmd.device == "speaker")
+            {
+                it->second->setSpeakerState(true);
+            } 
+            else if (cmd.device == "microphone")
+            {
+                it->second->setMicrophoneState(true);
+            }
+        }
+
+        else if (cmd.command == "send_audio")
+        {
+            auto it = calls.find(cmd.username);
+            
+            if (it == calls.end())
+            {
+                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
+                continue;
+            }
+
+            it->second->playAudio(cmd.audio_path);
+        }
+
         else if (cmd.command == "destroy")
         {
             initialized = false;
         }
+
     }
 }
 

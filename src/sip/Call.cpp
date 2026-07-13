@@ -102,12 +102,18 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                     return;
                 }
 
-                adm.getCaptureDevMedia()
-                    .startTransmit(*currentAudioMedia);
+                if (microphoneEnabled)
+                {
+                    adm.getCaptureDevMedia()
+                        .startTransmit(*currentAudioMedia);
+                }
 
-                currentAudioMedia->startTransmit(
-                    adm.getPlaybackDevMedia()
-                );
+                if (speakerEnabled)
+                {
+                    currentAudioMedia->startTransmit(
+                        adm.getPlaybackDevMedia()
+                    );
+                }
 
                 mediaConnected = true;
 
@@ -135,13 +141,19 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
             {
                 auto& adm =
                     pj::Endpoint::instance().audDevManager();
+                
+                if (microphoneEnabled)
+                {
+                    adm.getCaptureDevMedia()
+                        .stopTransmit(*currentAudioMedia);
+                }
 
-                adm.getCaptureDevMedia()
-                    .stopTransmit(*currentAudioMedia);
-
-                currentAudioMedia->stopTransmit(
-                    adm.getPlaybackDevMedia()
-                );
+                if (speakerEnabled)
+                {
+                    currentAudioMedia->stopTransmit(
+                        adm.getPlaybackDevMedia()
+                    );
+                }
 
                 mediaConnected = false;
                 currentAudioMedia = nullptr;
@@ -168,4 +180,74 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 int SIPCall::getCallId()
 {
     return getInfo().id;
+}
+
+
+void SIPCall::setSpeakerState(bool state)
+{
+    speakerEnabled = state;
+
+    if (!mediaConnected || !currentAudioMedia)
+        return;
+
+    auto& adm = pj::Endpoint::instance().audDevManager();
+
+    if (speakerEnabled)
+    {
+        currentAudioMedia->startTransmit(
+            adm.getPlaybackDevMedia()
+        );
+    }
+    else
+    {
+        currentAudioMedia->stopTransmit(
+            adm.getPlaybackDevMedia()
+        );
+    }
+}
+
+
+void SIPCall::setMicrophoneState(bool state)
+{
+    microphoneEnabled = state;
+
+    if (!mediaConnected || !currentAudioMedia)
+        return;
+
+    auto& adm = pj::Endpoint::instance().audDevManager();
+
+    if (microphoneEnabled)
+    {
+        adm.getCaptureDevMedia()
+            .startTransmit(*currentAudioMedia);
+    }
+    else
+    {
+        adm.getCaptureDevMedia()
+            .stopTransmit(*currentAudioMedia);
+    }
+}
+
+
+std::string SIPCall::getRemoteUri()
+{
+    return getInfo().remoteUri;
+}
+
+
+void SIPCall::playAudio(const std::string& path)
+{
+    if (!mediaConnected)
+        return;
+
+    if (audioFinishedCallback)
+    {
+        audioFinishedCallback();
+    }
+}
+
+
+void SIPCall::setAudioFinishedCallback(std::function<void() > cb)
+{
+    audioFinishedCallback = std::move(cb);
 }
