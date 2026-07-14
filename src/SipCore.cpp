@@ -561,7 +561,6 @@ void SIPCore::processPendingCommands()
 
             if (it == calls.end())
             {
-                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
                 continue;
             }
 
@@ -581,7 +580,6 @@ void SIPCore::processPendingCommands()
             
             if (it == calls.end())
             {
-                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
                 continue;
             }
 
@@ -601,7 +599,6 @@ void SIPCore::processPendingCommands()
             
             if (it == calls.end())
             {
-                std::cout << "CALL NOT FOUND: " << cmd.username << std::endl;
                 continue;
             }
 
