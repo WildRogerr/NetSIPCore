@@ -12,8 +12,10 @@ struct JsonCommand
     std::string remote;
     std::string current_state;
     std::string audio_state;
+    std::string device;
+    std::string audio_path;
     bool valid = false;
-
+    
 };
 
 

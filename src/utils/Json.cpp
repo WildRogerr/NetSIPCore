@@ -68,6 +68,12 @@ JsonCommand Json::parse(const std::string& raw)
     cmd.audio_state =
         extract(raw, "audio_state");
 
+    cmd.device =
+        extract(raw, "device");
+
+    cmd.audio_path =
+        extract(raw, "audio_path");
+
     if (!cmd.command.empty())
     {
         cmd.valid = true;

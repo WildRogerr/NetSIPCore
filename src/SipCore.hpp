@@ -27,7 +27,7 @@ class SIPCore {
         );
         void disconnectAccount(const std::string& username);
         void setupCall(const std::string& username,std::shared_ptr <SIPCall> call);
-        void SIPCore::makeCall(
+        void makeCall(
             const std::string& username,
             const std::string& number,
             const std::string& server

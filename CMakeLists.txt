@@ -16,6 +16,7 @@ add_executable(SIPCore
 )
 
 target_include_directories(SIPCore PRIVATE
+    src
     third_party/pjproject/pjsip/include
     third_party/pjproject/pjlib/include
     third_party/pjproject/pjlib-util/include

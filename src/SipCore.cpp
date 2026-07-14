@@ -605,7 +605,20 @@ void SIPCore::processPendingCommands()
                 continue;
             }
 
-            it->second->playAudio(cmd.audio_path);
+            it->second->playAudio(
+                cmd.audio_path,
+                [this, username = cmd.username, call = it->second]()
+                {
+                    std::lock_guard<std::mutex> lock(pendingMutex);
+
+                    pendingStates.push({
+                        username,
+                        "streaming",
+                        call->getRemoteUri(),
+                        "stop"
+                    });
+                }
+            );
         }
 
         else if (cmd.command == "destroy")
@@ -688,7 +701,9 @@ void SIPCore::handleTcpMessage(const std::string& msg)
             cmd.username,
             cmd.server,
             cmd.password,
-            cmd.remote
+            cmd.remote,
+            cmd.device,
+            cmd.audio_path
         });
     }
 }
