@@ -335,20 +335,6 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
             }
         };
 
-    call->setAudioFinishedCallback(
-        [this, username, call]()
-        {   
-            std::lock_guard <std::mutex> lock(pendingMutex);
-
-                pendingStates.push({
-                    username,
-                    "streaming",
-                    call->getRemoteUri(),
-                    "stop"
-                });
-        }
-    );
-
     std::cout
         << "CALL STORED: "
         << username

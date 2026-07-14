@@ -235,19 +235,29 @@ std::string SIPCall::getRemoteUri()
 }
 
 
-void SIPCall::playAudio(const std::string& path)
+void SIPCall::playAudio(
+    const std::string& path,
+    std::function<void()> finished
+)
 {
     if (!mediaConnected)
         return;
 
-    if (audioFinishedCallback)
+    if (!currentAudioMedia)
+        return;
+
+    if (path.empty())
+        return;
+
+    if (rtpPlayer.isPlaying())
     {
-        audioFinishedCallback();
+        std::cout << "Audio already playing" << std::endl;
+        return;
     }
-}
 
-
-void SIPCall::setAudioFinishedCallback(std::function<void() > cb)
-{
-    audioFinishedCallback = std::move(cb);
+    rtpPlayer.play(
+        currentAudioMedia,
+        path,
+        std::move(finished)
+    );
 }

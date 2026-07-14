@@ -2,6 +2,7 @@
 #include <pjsua2.hpp>
 #include <functional>
 #include <memory>
+#include "RTP.hpp"
 
 
 
@@ -15,12 +16,10 @@ class SIPCall : public pj::Call
         void onCallMediaState(pj::OnCallMediaStateParam &prm) override;
         std::function < void(std::shared_ptr <pj::Call>) > incomingCallCallback;
         std::function < void(const std::string&, const std::string&, const std::string&) > stateCallback;
-        std::function < void() > audioFinishedCallback;
         int getCallId();
         void setSpeakerState(bool state);
         void setMicrophoneState(bool state);
-        void playAudio(const std::string& path);
-        void setAudioFinishedCallback(std::function<void() > cb);
+        void playAudio(const std::string& path, std::function<void()> finished);
         std::string getRemoteUri();
 
     private:
@@ -29,5 +28,6 @@ class SIPCall : public pj::Call
         bool mediaConnected = false;
         bool speakerEnabled = true;
         bool microphoneEnabled = true;
+        RTPPlayer rtpPlayer;
 
 };
