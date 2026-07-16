@@ -37,6 +37,8 @@ void SIPCore::init()
 
     endpoint.libStart();
 
+    InfoModule::init();
+
     initialized = true;
 
     std::cout
@@ -301,8 +303,20 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
 {
 
     {
-    std::lock_guard <std::mutex> lock(callsMutex);
-    calls[username] = call;
+        std::lock_guard <std::mutex> lock(callsMutex);
+        calls[username] = call;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(deviceStateMutex);
+
+        auto it = deviceStates.find(username);
+
+        if (it != deviceStates.end())
+        {
+            call->setMicrophoneState(it->second.microphone);
+            call->setSpeakerState(it->second.speaker);
+        }
     }
 
     call->stateCallback =
@@ -557,54 +571,93 @@ void SIPCore::processPendingCommands()
 
         else if (cmd.command == "mute")
         {   
-            auto it = calls.find(cmd.username);
 
-            if (it == calls.end())
             {
-                continue;
+                std::lock_guard<std::mutex> lock(deviceStateMutex);
+
+                if (cmd.device == "microphone")
+                    deviceStates[cmd.username].microphone = false;
+
+                if (cmd.device == "speaker")
+                    deviceStates[cmd.username].speaker = false;
             }
 
-            if (cmd.device == "speaker")
+            std::shared_ptr<SIPCall> call;
+
             {
-                it->second->setSpeakerState(false);
-            } 
-            else if (cmd.device == "microphone")
-            {
-                it->second->setMicrophoneState(false);
+                std::lock_guard<std::mutex> lock(callsMutex);
+
+                auto it = calls.find(cmd.username);
+
+                if (it != calls.end())
+                    call = it->second;
             }
+
+            if (call)
+            {
+                if (cmd.device == "microphone")
+                    call->setMicrophoneState(false);
+
+                if (cmd.device == "speaker")
+                    call->setSpeakerState(false);
+            }
+
         }
 
         else if (cmd.command == "unmute")
         {
-            auto it = calls.find(cmd.username);
-            
-            if (it == calls.end())
+
             {
-                continue;
+                std::lock_guard<std::mutex> lock(deviceStateMutex);
+
+                if (cmd.device == "microphone")
+                    deviceStates[cmd.username].microphone = true;
+
+                if (cmd.device == "speaker")
+                    deviceStates[cmd.username].speaker = true;
             }
 
-            if (cmd.device == "speaker")
+            std::shared_ptr<SIPCall> call;
+
             {
-                it->second->setSpeakerState(true);
-            } 
-            else if (cmd.device == "microphone")
-            {
-                it->second->setMicrophoneState(true);
+                std::lock_guard<std::mutex> lock(callsMutex);
+
+                auto it = calls.find(cmd.username);
+
+                if (it != calls.end())
+                    call = it->second;
             }
+
+            if (call)
+            {
+                if (cmd.device == "microphone")
+                    call->setMicrophoneState(true);
+
+                if (cmd.device == "speaker")
+                    call->setSpeakerState(true);
+            }
+
         }
 
         else if (cmd.command == "send_audio")
         {
-            auto it = calls.find(cmd.username);
-            
-            if (it == calls.end())
+            std::shared_ptr<SIPCall> call;
+
             {
-                continue;
+                std::lock_guard<std::mutex> lock(callsMutex);
+
+                auto it = calls.find(cmd.username);
+
+                if (it != calls.end())
+                    call = it->second;
             }
 
-            it->second->playAudio(
+            if (!call)
+                continue;
+
+            call->playAudio(
                 cmd.audio_path,
-                [this, username = cmd.username, call = it->second]()
+                [this, username = cmd.username, call]()
                 {
                     std::lock_guard<std::mutex> lock(pendingMutex);
 
@@ -616,6 +669,7 @@ void SIPCore::processPendingCommands()
                     });
                 }
             );
+
         }
 
         else if (cmd.command == "destroy")

@@ -110,6 +110,8 @@ void RTPPlayer::stop()
 
 void RTPAudioPlayer::onEof2()
 {
+    std::cout << "EOF CALLBACK" << std::endl; ////////
+
     if (finishedCallback)
         finishedCallback();
 }

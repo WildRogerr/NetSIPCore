@@ -4,6 +4,7 @@
 #include <pjsua2.hpp>
 #include "sip/Account.hpp"
 #include "sip/Call.hpp"
+#include "sip/InfoModule.h"
 #include "tcp/TcpServer.hpp"
 #include "utils/Json.hpp"
 #include <queue>
@@ -78,5 +79,12 @@ class SIPCore {
         std::mutex callsMutex;
         std::atomic<bool> initialized=false;
         std::thread workerThread;
+        struct DeviceState
+        {
+            bool microphone = true;
+            bool speaker = true;
+        };
+        std::unordered_map<std::string, DeviceState> deviceStates;
+        std::mutex deviceStateMutex;
 
 };

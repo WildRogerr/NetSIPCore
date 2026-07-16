@@ -1,4 +1,5 @@
 #include "Call.hpp"
+#include <pjsip/sip_event.h>
 #include <iostream>
 
 
@@ -68,6 +69,24 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
             info.remoteUri
         );
     }
+}
+
+
+void SIPCall::onCallTsxState(pj::OnCallTsxStateParam &prm)
+{
+    auto *ev = static_cast<pjsip_event*>(prm.e.pjEvent);
+
+    if (!ev)
+        return;
+
+    std::cout << "EVENT TYPE = " << ev->type << std::endl;
+
+    if (ev->type != PJSIP_EVENT_TSX_STATE)
+        return;
+
+    std::cout << "SOURCE TYPE = "
+              << ev->body.tsx_state.type
+              << std::endl;
 }
 
 
@@ -217,12 +236,14 @@ void SIPCall::setMicrophoneState(bool state)
     auto& adm = pj::Endpoint::instance().audDevManager();
 
     if (microphoneEnabled)
-    {
+    {   
+        std::cout << "MIC TRUE" << std::endl; //
         adm.getCaptureDevMedia()
             .startTransmit(*currentAudioMedia);
     }
     else
-    {
+    {   
+        std::cout << "MIC FALSE" << std::endl; //
         adm.getCaptureDevMedia()
             .stopTransmit(*currentAudioMedia);
     }
