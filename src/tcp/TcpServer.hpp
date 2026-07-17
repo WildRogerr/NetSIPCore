@@ -2,8 +2,23 @@
 #include <functional>
 #include <string>
 #include <thread>
-#include <winsock2.h>
 #include <mutex>
+
+
+#ifdef _WIN32
+    #include <winsock2.h>
+    #pragma comment(lib, "ws2_32.lib")
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <arpa/inet.h>
+    #include <unistd.h>
+    #include <signal.h>
+    using SOCKET = int;
+    constexpr int INVALID_SOCKET = -1;
+    constexpr int SOCKET_ERROR = -1;
+    signal(SIGPIPE, SIG_IGN);
+#endif
 
 
 

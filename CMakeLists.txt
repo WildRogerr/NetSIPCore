@@ -34,14 +34,30 @@ target_link_directories(SIPCore PRIVATE
     ${CMAKE_SOURCE_DIR}/third_party/pjproject/lib
 )
 
-target_link_libraries(SIPCore PRIVATE
-    libpjproject-x86_64-x64-vc14-Release
-    ws2_32
-    winmm
-    ole32
-    oleaut32
-    uuid
-    secur32
-    crypt32
-    iphlpapi
-)
+if(WIN32)
+
+    target_link_libraries(SIPCore PRIVATE
+        libpjproject-x86_64-x64-vc14-Release
+
+        ws2_32
+        winmm
+        ole32
+        oleaut32
+        uuid
+        secur32
+        crypt32
+        iphlpapi
+    )
+
+else()
+
+    target_link_libraries(SIPCore PRIVATE
+        pj
+
+        pthread
+        dl
+        m
+        rt
+    )
+
+endif()
