@@ -43,11 +43,15 @@ void RTPPlayer::play(
     if (playing)
         stop();
 
+    if (player)
+        player.reset();
+
     try
     {   
-        finishedCallback = std::move(finished);
-        player.reset();
+
         player = std::make_unique<RTPAudioPlayer>();
+
+        finishedCallback = std::move(finished);
 
         player->finishedCallback =
         [this]()
@@ -96,7 +100,6 @@ void RTPPlayer::stop()
         if (currentTarget)
         {
             player->stopTransmit(*currentTarget);
-            player.reset();
             currentTarget = nullptr;
         }
         playing = false;
@@ -110,8 +113,8 @@ void RTPPlayer::stop()
 
 void RTPAudioPlayer::onEof2()
 {
-    std::cout << "EOF CALLBACK" << std::endl; ////////
-
     if (finishedCallback)
+    {
         finishedCallback();
+    }
 }

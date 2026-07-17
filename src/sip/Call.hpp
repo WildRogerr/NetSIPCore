@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include "utils/RTP.hpp"
+#include <mutex>
 
 
 
@@ -14,7 +15,6 @@ class SIPCall : public pj::Call
         ~SIPCall();
         virtual void onCallState(pj::OnCallStateParam &prm) override;
         void onCallMediaState(pj::OnCallMediaStateParam &prm) override;
-        void onCallTsxState(pj::OnCallTsxStateParam &prm) override;
         std::function < void(std::shared_ptr <pj::Call>) > incomingCallCallback;
         std::function < void(const std::string&, const std::string&, const std::string&) > stateCallback;
         int getCallId();
@@ -30,5 +30,6 @@ class SIPCall : public pj::Call
         bool speakerEnabled = true;
         bool microphoneEnabled = true;
         RTPPlayer rtpPlayer;
+        std::mutex mediaMutex;
 
 };
