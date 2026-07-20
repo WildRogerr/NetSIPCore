@@ -3,6 +3,8 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <iostream>
+
 
 
 #ifdef _WIN32
@@ -17,7 +19,6 @@
     using SOCKET = int;
     constexpr int INVALID_SOCKET = -1;
     constexpr int SOCKET_ERROR = -1;
-    signal(SIGPIPE, SIG_IGN);
 #endif
 
 
@@ -32,6 +33,7 @@ public:
     void stop();
     void setOnMessage(std::function<void(const std::string&)> cb);
     void sendMessage(const std::string& msg);
+    std::string detectLocalIp(const std::string& targetIp,int targetPort);
 
 private:
 

@@ -1,6 +1,4 @@
 #include "Call.hpp"
-#include <pjsip/sip_event.h>
-#include <iostream>
 
 
 
