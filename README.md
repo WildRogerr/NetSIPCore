@@ -1,0 +1,1 @@
+If microphone access is blocked by security software, add application to trusted applications list.

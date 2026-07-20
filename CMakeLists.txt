@@ -16,6 +16,10 @@ add_executable(SIPCore
     src/utils/RTP.cpp
 )
 
+set_target_properties(SIPCore PROPERTIES
+    OUTPUT_NAME "NetSIPCore"
+)
+
 target_include_directories(SIPCore PRIVATE
     src
     third_party/pjproject/pjsip/include
@@ -35,6 +39,7 @@ target_link_directories(SIPCore PRIVATE
 )
 
 if(WIN32)
+    target_sources(SIPCore PRIVATE resources/NetSIPCore.rc)
 
     target_link_libraries(SIPCore PRIVATE
         libpjproject-x86_64-x64-vc14-Release

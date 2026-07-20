@@ -1,3 +1,12 @@
+/*
+ * NetSIPCore
+ * Copyright (C) 2026 WildRogerr
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * version 2 as published by the Free Software Foundation.
+ */
+
 #include "Call.hpp"
 
 
@@ -72,7 +81,6 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
 
 void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 {
-    std::lock_guard<std::mutex> lock(mediaMutex);
     
     pj::CallInfo info = getInfo();
 
@@ -91,88 +99,132 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 
         if (media.status == PJSUA_CALL_MEDIA_ACTIVE)
         {   
-            if (mediaConnected)
-                continue;
+
+            pj::AudioMedia* audioMedia = nullptr;
 
             try
             {
+                std::lock_guard<std::mutex> lock(mediaMutex);
+
+                if (mediaConnected)
+                    continue;
+
                 currentAudioMedia = static_cast<pj::AudioMedia*>(getMedia(i));
 
-                if (!currentAudioMedia)
-                {
-                    return;
-                }
+                audioMedia = currentAudioMedia;
 
-                if (microphoneEnabled)
-                {
-                    adm.getCaptureDevMedia()
-                        .startTransmit(*currentAudioMedia);
-                }
-
-                if (speakerEnabled)
-                {
-                    currentAudioMedia->startTransmit(
-                        adm.getPlaybackDevMedia()
-                    );
-                }
+                if (!audioMedia)
+                    continue;
 
                 mediaConnected = true;
-
-                std::cout
-                    << "[MEDIA CONNECTED]"
-                    << std::endl;
             }
             catch (pj::Error& err)
             {
                 std::cout
-                    << "MEDIA CONNECT ERROR: "
+                    << "MEDIA GET ERROR: "
                     << err.info()
                     << std::endl;
+
+                continue;
             }
+
+            if (microphoneEnabled)
+            {
+                try
+                {
+                    adm.getCaptureDevMedia()
+                        .startTransmit(*audioMedia);
+                }
+                catch (pj::Error &err)
+                {
+                    std::cout
+                        << "MIC CONNECT ERROR: "
+                        << err.info()
+                        << std::endl;
+                }
+            }
+
+            if (speakerEnabled)
+            {
+                try
+                {
+                    audioMedia->startTransmit(
+                        adm.getPlaybackDevMedia()
+                    );
+                }
+                catch (pj::Error &err)
+                {
+                    std::cout
+                        << "SPEAKER CONNECT ERROR: "
+                        << err.info()
+                        << std::endl;
+                }
+            }
+
+            std::cout
+                << "[MEDIA CONNECTED]"
+                << std::endl;
+
         }
 
         // MEDIA DISCONNECTED
 
         else
         {
-            if (!mediaConnected)
-                continue;
 
-            try
+            pj::AudioMedia* audioMedia = nullptr;
+
             {
-                auto& adm =
-                    pj::Endpoint::instance().audDevManager();
+                std::lock_guard<std::mutex> lock(mediaMutex);
+
+                if (!mediaConnected)
+                    continue;
+
+                audioMedia = currentAudioMedia;
+
+                if (!audioMedia)
+                    continue;
+
+                mediaConnected = false;
+                currentAudioMedia = nullptr;
+            }
                 
-                if (microphoneEnabled)
+            if (microphoneEnabled)
+            {
+                try
                 {
                     adm.getCaptureDevMedia()
-                        .stopTransmit(*currentAudioMedia);
+                        .stopTransmit(*audioMedia);
                 }
-
-                if (speakerEnabled)
+                catch (pj::Error &err)
                 {
-                    currentAudioMedia->stopTransmit(
+                    std::cout
+                        << "MIC DISCONNECT ERROR: "
+                        << err.info()
+                        << std::endl;
+                }
+            }
+
+            if (speakerEnabled)
+            {
+                try
+                {
+                    audioMedia->stopTransmit(
                         adm.getPlaybackDevMedia()
                     );
                 }
-
-                mediaConnected = false;
-                currentAudioMedia = nullptr;
-
-                std::cout
-                    << "[MEDIA DISCONNECTED]"
-                    << std::endl;
+                catch (pj::Error &err)
+                {
+                    std::cout
+                        << "SPEAKER DISCONNECT ERROR: "
+                        << err.info()
+                        << std::endl;
+                }
             }
-            catch (pj::Error& err)
-            {
-                std::cout
-                    << "MEDIA DISCONNECT ERROR: "
-                    << err.info()
-                    << std::endl;
-
-                mediaConnected = false;
-                currentAudioMedia = nullptr;
-            }
+            
+            std::cout
+                << "[MEDIA DISCONNECTED]"
+                << std::endl;
         }
     }
 }

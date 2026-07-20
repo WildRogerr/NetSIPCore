@@ -6,8 +6,6 @@ if not exist build (
     mkdir build
 )
 
-cd build
+cmake -S . -B build
 
-cmake ..
-
-cmake --build . --config Release
+cmake --build build --config Release
