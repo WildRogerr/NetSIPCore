@@ -42,7 +42,6 @@ public:
     void stop();
     void setOnMessage(std::function<void(const std::string&)> cb);
     void sendMessage(const std::string& msg);
-    std::string detectLocalIp(const std::string& targetIp,int targetPort);
 
 private:
 

@@ -58,13 +58,13 @@ void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm)
 }
 
 
-void SIPAccount::setStateCallback(std::function < void(const std::string&, const std::string&, const std::string&) > cb)
+void SIPAccount::setStateCallback(std::function<void(const std::string&, const std::string&, const std::string&)> cb)
 {
     stateCallback = cb;
 }
 
 
-void SIPAccount::setCallCallback(std::function < void(std::shared_ptr<SIPCall >) > cb)
+void SIPAccount::setCallCallback(std::function<void(std::shared_ptr<SIPCall>)> cb)
 {
     callCallback = cb;
 }

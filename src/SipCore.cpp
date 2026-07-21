@@ -177,7 +177,7 @@ void SIPCore::registerAccount(
 
     account->setCallCallback(
         [this, username](
-            std::shared_ptr <SIPCall> call
+            std::shared_ptr<SIPCall> call
         )
         {
             setupCall(
@@ -237,12 +237,12 @@ void SIPCore::registerAccount(
 void SIPCore::disconnectAccount(const std::string& username)
 {
 
-    std::shared_ptr <SIPAccount> account;
-    std::shared_ptr <SIPCall> call;
+    std::shared_ptr<SIPAccount> account;
+    std::shared_ptr<SIPCall> call;
 
 
     {
-        std::lock_guard <std::mutex> lock(accountsMutex);
+        std::lock_guard<std::mutex> lock(accountsMutex);
 
         auto it = accounts.find(username);
 
@@ -254,7 +254,7 @@ void SIPCore::disconnectAccount(const std::string& username)
 
 
     {
-        std::lock_guard <std::mutex> lock(callsMutex);
+        std::lock_guard<std::mutex> lock(callsMutex);
 
         auto it = calls.find(username);
 
@@ -311,7 +311,7 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
 {
 
     {
-        std::lock_guard <std::mutex> lock(callsMutex);
+        std::lock_guard<std::mutex> lock(callsMutex);
         calls[username] = call;
     }
 
@@ -335,7 +335,7 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
         )
         {
             {
-                std::lock_guard <std::mutex> lock(pendingMutex);
+                std::lock_guard<std::mutex> lock(pendingMutex);
 
                 pendingStates.push({
                     username,
@@ -348,7 +348,7 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
 
             if (state == "disconnected")
             {   
-                std::lock_guard <std::mutex> lock(callRemoveMutex);
+                std::lock_guard<std::mutex> lock(callRemoveMutex);
                 pendingCallRemove.push(username);
                 std::cout
                     << "CALL DISCONNECTED: "
@@ -371,10 +371,10 @@ void SIPCore::makeCall(
     const std::string& server
 )
 {
-    std::shared_ptr <SIPAccount> account;
+    std::shared_ptr<SIPAccount> account;
 
     {
-        std::lock_guard <std::mutex> lock(accountsMutex);
+        std::lock_guard<std::mutex> lock(accountsMutex);
 
         auto it = accounts.find(username);
 
@@ -424,9 +424,9 @@ void SIPCore::makeCall(
 
 void SIPCore::answerCall(const std::string& username)
 {
-    std::shared_ptr <SIPCall> call;
+    std::shared_ptr<SIPCall> call;
     {
-        std::lock_guard <std::mutex> lock(callsMutex);
+        std::lock_guard<std::mutex> lock(callsMutex);
 
         auto it = calls.find(username);
 
@@ -454,9 +454,9 @@ void SIPCore::answerCall(const std::string& username)
 void SIPCore::hangupCall(const std::string& username)
 {
 
-    std::shared_ptr <SIPCall> call;
+    std::shared_ptr<SIPCall> call;
     {
-        std::lock_guard <std::mutex> lock(callsMutex);
+        std::lock_guard<std::mutex> lock(callsMutex);
 
         auto it = calls.find(username);
 
@@ -481,10 +481,10 @@ void SIPCore::hangupCall(const std::string& username)
 
 void SIPCore::processPendingCallRemove()
 {
-    std::queue <std::string> q;
+    std::queue<std::string> q;
 
     {
-        std::lock_guard < std::mutex > lock(callRemoveMutex);
+        std::lock_guard<std::mutex> lock(callRemoveMutex);
         std::swap(q, pendingCallRemove);
     }
 
@@ -494,7 +494,7 @@ void SIPCore::processPendingCallRemove()
         q.pop();
 
         {
-            std::lock_guard <std::mutex> lock(callsMutex);
+            std::lock_guard<std::mutex> lock(callsMutex);
             calls.erase(username);
         }
 
@@ -508,10 +508,10 @@ void SIPCore::processPendingCallRemove()
 
 void SIPCore::processPendingStates()
 {
-    std::queue <PendingState> localQueue;
+    std::queue<PendingState> localQueue;
 
     {
-        std::lock_guard <std::mutex> lock(pendingMutex);
+        std::lock_guard<std::mutex> lock(pendingMutex);
         std::swap(localQueue, pendingStates);
     }
 
@@ -532,10 +532,10 @@ void SIPCore::processPendingStates()
 
 void SIPCore::processPendingCommands()
 {
-    std::queue <PendingCommand> localQueue;
+    std::queue<PendingCommand> localQueue;
 
     {
-        std::lock_guard <std::mutex> lock(commandMutex);
+        std::lock_guard<std::mutex> lock(commandMutex);
         std::swap(localQueue, pendingCommands);
     }
 

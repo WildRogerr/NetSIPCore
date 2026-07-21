@@ -38,7 +38,7 @@ class SIPCore {
             const std::string& password
         );
         void disconnectAccount(const std::string& username);
-        void setupCall(const std::string& username,std::shared_ptr <SIPCall> call);
+        void setupCall(const std::string& username,std::shared_ptr<SIPCall> call);
         void makeCall(
             const std::string& username,
             const std::string& number,
@@ -60,8 +60,8 @@ class SIPCore {
 
     private:
         pj::Endpoint endpoint;
-        std::unordered_map < std::string,std::shared_ptr <SIPAccount>> accounts;
-        std::unordered_map < std::string,std::shared_ptr <SIPCall>> calls;
+        std::unordered_map<std::string,std::shared_ptr<SIPAccount>> accounts;
+        std::unordered_map<std::string,std::shared_ptr<SIPCall>> calls;
         TCPServer tcpServer;
         struct PendingState
         {
@@ -70,7 +70,7 @@ class SIPCore {
             std::string remote;
             std::string audio_state;
         };
-        std::queue <PendingState> pendingStates;
+        std::queue<PendingState> pendingStates;
         std::mutex pendingMutex;
         struct PendingCommand
         {
@@ -82,10 +82,10 @@ class SIPCore {
             std::string device;
             std::string audio_path;
         };
-        std::queue <PendingCommand> pendingCommands;
+        std::queue<PendingCommand> pendingCommands;
         std::mutex commandMutex;
         std::mutex callRemoveMutex;
-        std::queue <std::string> pendingCallRemove;
+        std::queue<std::string> pendingCallRemove;
         std::mutex accountsMutex;
         std::mutex callsMutex;
         std::atomic<bool> initialized=false;
