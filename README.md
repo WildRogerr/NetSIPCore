@@ -1,62 +1,170 @@
-NetSIPCore
+# NetSIPCore
 
-Cross-platform SIP engine based on PJSUA2 with Python SDK.
+Cross-platform SIP engine based on **PJSUA2** with a TCP JSON API and an official Python SDK.
 
-Features
+Current version:
+1.0.0
 
-• Multiple SIP accounts
-• Multiple simultaneous calls
-• RTP WAV playback
-• Automatic microphone/speaker control
-• TCP JSON API
-• Python SDK
-• Windows
-• Linux
+Supported platforms:
 
-Architecture
+- Windows x64
+- Linux x64
 
-Python
-     │
-     │ JSON over TCP
-     ▼
-NetSIPCore
-     │
-     ▼
-PJSUA2
-     │
-     ▼
-PJSIP
+NetSIPCore is designed for developers who need a programmable SIP engine that can be easily integrated into automation systems, testing environments, desktop applications, or custom VoIP software.
 
-Repository structure
+---
 
+## Features
+
+- Multiple SIP account registration
+- Multiple simultaneous calls
+- Incoming and outgoing calls
+- RTP WAV audio playback
+- Automatic conversation mode
+- Speaker mute / unmute
+- Microphone mute / unmute
+- TCP JSON API
+- Official Python SDK
+- Windows support
+- Linux support
+
+---
+
+## Architecture
+
+```
+                Application
+                     │
+                     │
+     ┌───────────────┴───────────────┐
+     │                               │
+Python SDK                     Any language
+(NetSIP)                       TCP Client
+     │                               │
+     └───────────────┬───────────────┘
+                     │
+             JSON over TCP
+                     │
+                     ▼
+               NetSIPCore
+                     │
+                     ▼
+                  PJSUA2
+                     │
+                     ▼
+                   PJSIP
+                     │
+                     ▼
+                 SIP Server
+```
+
+NetSIPCore is completely independent of the Python SDK.
+
+Any programming language capable of sending and receiving JSON over TCP can control the SIP engine.
+
+---
+
+## Repository structure
+
+```
 src/
-    SIP engine
+    NetSIPCore source code
 
 python/
-    Python SDK
+    Official Python SDK
+
+examples/
+    Example applications
 
 docs/
-    Protocol documentation
+    Documentation
 
-Building
+LICENSE
+README.md
+```
 
-...
+---
 
-Python
+## Building
 
-pip install netsip
+Build instructions are available in:
 
-Quick example
+```
+docs/BUILD.md
+```
 
+---
+
+## Installation
+
+Installation instructions for Windows and Linux are available in:
+
+```
+docs/INSTALL.md
+```
+
+---
+
+## Python SDK
+
+The official Python SDK is located in:
+
+```
+python/
+```
+
+After installation:
+
+```python
 from netsip import SIPManager
+```
 
-...
+See:
 
-Documentation
+```
+python/examples/
+```
 
-See docs/API.md
-See docs/JSON.md
+for usage examples.
 
-License
+---
 
-GPLv2
+## TCP JSON API
+
+NetSIPCore is controlled using a newline-delimited JSON protocol over TCP.
+
+Protocol documentation:
+
+```
+docs/JSON.md
+```
+
+---
+
+## API Documentation
+
+Python SDK documentation:
+
+```
+docs/API.md
+```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| BUILD.md | Building NetSIPCore |
+| INSTALL.md | Installation and runtime requirements |
+| API.md | Python SDK API |
+| JSON.md | TCP JSON protocol |
+| ARCHITECTURE.md | Internal architecture |
+
+---
+
+## License
+
+NetSIPCore is distributed under the GNU General Public License version 2.
+
+See the LICENSE file for details.

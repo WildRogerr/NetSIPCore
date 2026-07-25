@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+
+recursive-include src/netsip *.py
+recursive-include src/netsip *.exe
+recursive-include src/netsip resources/*.wav

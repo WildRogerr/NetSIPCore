@@ -1,3 +1,22 @@
+#
+# NetSIP
+#
+# Python library for controlling the NetSIPCore SIP engine.
+#
+# Copyright (C) 2026 WildRogerr
+#
+# This file is part of NetSIP.
+#
+# NetSIP is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2
+# as published by the Free Software Foundation.
+#
+# NetSIP is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+#
+
 import asyncio
 import socket
 import json
@@ -6,8 +25,6 @@ import queue
 import subprocess
 import threading
 from pathlib import Path
-
-
 
 
 
@@ -61,7 +78,7 @@ class SIPManager():
             print("[SIPCORE]", line)
 
 
-    async def abonent_registration(self, server:str, number:str, password:str):
+    async def subscriber_registration(self, server:str, number:str, password:str):
         self.registration_state = False
 
         event = asyncio.Event()
@@ -98,7 +115,7 @@ class SIPManager():
         self.stop_audio = False
 
 
-    async def abonent_disconnect(self, number:str):
+    async def subscriber_disconnect(self, number:str):
         client = self.clients.get(number)
         if client is None:
             return
@@ -290,9 +307,9 @@ class SIPManager():
                         # print("RECV:", msg)
                         data_json = json.loads(msg)
                         username = data_json['username']
-                        state = data_json['state']
-                        audio_state = data_json['audio_state']
-                        # remote_number = data_json['remote']
+                        state = data_json.get('state', '')
+                        audio_state = data_json.get('audio_state', 'stop')
+                        remote_number = data_json.get('remote', '')
                         client = self.clients.get(username)
 
                         if not client:
@@ -300,6 +317,8 @@ class SIPManager():
 
                         client['current_state'] = state
                         client['audio_state'] = audio_state
+                        client['remote_number'] = remote_number
+                        
                         if state == "registered":
                             event = self.reg_events.get(username)
 
