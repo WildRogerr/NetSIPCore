@@ -24,6 +24,8 @@ int main() {
         std::cout << e.info() << std::endl;
     }
 
+    core.destroy();
+
     return 0;
     
 }

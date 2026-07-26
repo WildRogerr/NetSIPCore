@@ -2,6 +2,10 @@
 
 cd /d %~dp0\..
 
+if exist build (
+    rmdir /s /q build
+)
+
 if not exist build (
     mkdir build
 )

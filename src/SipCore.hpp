@@ -88,8 +88,8 @@ class SIPCore {
         std::queue<std::string> pendingCallRemove;
         std::mutex accountsMutex;
         std::mutex callsMutex;
-        std::atomic<bool> initialized=false;
-        std::thread workerThread;
+        std::atomic<bool> initialized{false};
+        std::atomic<bool> destroyed{false};
         struct DeviceState
         {
             bool microphone = true;

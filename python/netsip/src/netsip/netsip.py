@@ -24,6 +24,7 @@ import time
 import queue
 import subprocess
 import threading
+import platform
 from pathlib import Path
 
 
@@ -32,9 +33,19 @@ class SIPManager():
 
     def __init__(self):
         self.sipcore_log = []
-        MODULE_DIR = Path(__file__).resolve().parent
-        NetSIPCore = MODULE_DIR / "NetSIPCore.exe"
-        self.sipcore_process = subprocess.Popen([NetSIPCore],
+
+        module_dir = Path(__file__).resolve().parent
+
+        if platform.system() == "Windows":
+            sipcore_binary = module_dir / "NetSIPCore.exe"
+        else:
+            sipcore_binary = module_dir / "NetSIPCore"
+
+        if not sipcore_binary.exists():
+            raise FileNotFoundError(
+                f"NetSIPCore binary not found: {sipcore_binary}"
+            )
+        self.sipcore_process = subprocess.Popen([str(sipcore_binary)],
                                                 stdout=subprocess.PIPE,
                                                 stderr=subprocess.STDOUT,
                                                 text=True,
@@ -50,6 +61,8 @@ class SIPManager():
         self.registration_state = False
         self.stop_audio = True
         self.autospeak = False
+        
+        time.sleep(1)
         threading.Thread(target=self.tcp_thread, daemon=True).start()
 
         # Default audio file paths

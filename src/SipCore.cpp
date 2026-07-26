@@ -71,10 +71,10 @@ void SIPCore::destroy()
 {
     initialized = false;
 
-    if (workerThread.joinable())
-    {
-        workerThread.join();
-    }
+    if (destroyed)
+        return;
+
+    destroyed = true;
 
     try
     {

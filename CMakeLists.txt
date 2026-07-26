@@ -56,13 +56,46 @@ if(WIN32)
 
 else()
 
-    target_link_libraries(SIPCore PRIVATE
-        pj
+    set(PJPROJECT_DIR ${CMAKE_SOURCE_DIR}/third_party/pjproject)
 
+    target_link_libraries(SIPCore PRIVATE
+
+        # pjsip
+        ${PJPROJECT_DIR}/pjsip/lib/libpjsua2-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjsip/lib/libpjsua-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjsip/lib/libpjsip-ua-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjsip/lib/libpjsip-simple-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjsip/lib/libpjsip-x86_64-pc-linux-gnu.a
+
+        # pjmedia
+        ${PJPROJECT_DIR}/pjmedia/lib/libpjmedia-codec-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjmedia/lib/libpjmedia-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjmedia/lib/libpjmedia-audiodev-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjmedia/lib/libpjmedia-videodev-x86_64-pc-linux-gnu.a
+
+        # pjnath
+        ${PJPROJECT_DIR}/pjnath/lib/libpjnath-x86_64-pc-linux-gnu.a
+
+        # pjlib
+        ${PJPROJECT_DIR}/pjlib-util/lib/libpjlib-util-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/pjlib/lib/libpj-x86_64-pc-linux-gnu.a
+
+        # third party
+        ${PJPROJECT_DIR}/third_party/lib/libsrtp-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libresample-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libgsmcodec-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libilbccodec-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libg7221codec-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libspeex-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libwebrtc-x86_64-pc-linux-gnu.a
+        ${PJPROJECT_DIR}/third_party/lib/libyuv-x86_64-pc-linux-gnu.a
+
+        # system
+        asound
+        uuid
         pthread
         dl
         m
-        rt
     )
 
 endif()
