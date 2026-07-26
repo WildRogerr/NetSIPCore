@@ -2,13 +2,13 @@
 
 Python SDK for controlling the NetSIPCore SIP engine.
 
-NetSIP is a Python interface for building SIP applications using the native NetSIPCore engine.
+NetSIP provides a Python interface for building SIP applications using the native NetSIPCore engine.
 
 The SDK provides asynchronous control of SIP accounts, calls, audio devices and RTP audio playback.
 
 ---
 
-## Features
+# Features
 
 * SIP account registration
 * SIP account disconnection
@@ -20,10 +20,9 @@ The SDK provides asynchronous control of SIP accounts, calls, audio devices and 
 * Automatic conversation mode
 * NetSIPCore log access
 
-
 ---
 
-## Architecture
+# Architecture
 
 The Python SDK is a controller for the NetSIPCore native SIP engine.
 
@@ -47,22 +46,20 @@ The SDK does not communicate with PJSIP directly.
 
 All SIP operations are performed by NetSIPCore.
 
-
 ---
 
-## Requirements
+# Requirements
 
 * Python 3.10+
-* NetSIPCore binary
 * SIP server compatible with PJSIP
 
+The package includes the required NetSIPCore native engine.
 
-The Python package communicates with NetSIPCore using:
+The SDK communicates with NetSIPCore using:
 
 ```
 TCP 127.0.0.1:4890
 ```
-
 
 ---
 
@@ -74,13 +71,23 @@ TCP 127.0.0.1:4890
 pip install netsip
 ```
 
+The package automatically installs the correct NetSIPCore binary for the current operating system.
+
+Supported platforms:
+
+* Windows x64
+* Linux x64
+
+---
 
 ## Install from source
+
+For development:
 
 ```bash
 git clone https://github.com/WildRogerr/NetSIPCore.git
 
-cd NetSIPCore/python
+cd NetSIPCore/python/netsip
 
 pip install .
 ```
@@ -88,56 +95,15 @@ pip install .
 
 ---
 
-# NetSIPCore binary
-
-The Python SDK requires the NetSIPCore SIP engine.
-
-The native engine is distributed separately.
-
-Download binaries from:
-
-```
-https://github.com/WildRogerr/NetSIPCore/releases
-```
-
-
-Supported platforms:
-
-* Windows x64
-* Linux x64
-
-
-The SDK automatically searches for NetSIPCore in the package directory:
-
-```
-netsip/
-    __init__.py
-    netsip.py
-    NetSIPCore.exe
-```
-
-
----
-
 # Windows requirements
 
-Windows builds require Microsoft Visual C++ Runtime libraries.
-
-Required files:
-
-```
-vcruntime140.dll
-msvcp140.dll
-ucrtbase.dll
-```
-
+Windows native binaries require Microsoft Visual C++ Runtime libraries.
 
 Install Microsoft Visual C++ Redistributable 2015-2022:
 
 ```
 https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist
 ```
-
 
 ---
 
@@ -147,10 +113,9 @@ Some security software can block microphone access.
 
 If microphone access is unavailable:
 
-1. Add NetSIPCore executable to trusted applications.
+1. Add NetSIPCore to trusted applications.
 2. Allow microphone access in Windows privacy settings.
 3. Restart the application.
-
 
 Windows:
 
@@ -160,7 +125,6 @@ Settings
  → Microphone
  → Allow desktop apps
 ```
-
 
 ---
 
@@ -184,7 +148,7 @@ async def main():
     )
 
 
-    if sip.registration_state:
+    if sip.clients["1001"].current_state == "registered":
 
         print("Registered")
 
@@ -210,7 +174,6 @@ async def main():
 asyncio.run(main())
 ```
 
-
 ---
 
 # API
@@ -221,12 +184,11 @@ asyncio.run(main())
 sip = SIPManager()
 ```
 
-Creates NetSIPCore process and initializes communication.
-
+Creates the NetSIPCore process and initializes communication.
 
 ---
 
-## Registration
+# Registration
 
 Register SIP account:
 
@@ -238,7 +200,6 @@ await sip.subscriber_registration(
 )
 ```
 
-
 Disconnect account:
 
 ```python
@@ -247,10 +208,9 @@ await sip.subscriber_disconnect(
 )
 ```
 
-
 ---
 
-## Calls
+# Calls
 
 Make outgoing call:
 
@@ -261,7 +221,6 @@ await sip.call(
 )
 ```
 
-
 Answer incoming call:
 
 ```python
@@ -269,7 +228,6 @@ await sip.answer(
     number
 )
 ```
-
 
 Hang up:
 
@@ -279,12 +237,11 @@ await sip.hang_up(
 )
 ```
 
-
 ---
 
-## Audio control
+# Audio control
 
-Speaker:
+## Speaker
 
 ```python
 await sip.mute(number)
@@ -292,15 +249,13 @@ await sip.mute(number)
 await sip.unmute(number)
 ```
 
-
-Microphone:
+## Microphone
 
 ```python
 await sip.micoff(number)
 
 await sip.micon(number)
 ```
-
 
 ---
 
@@ -315,8 +270,7 @@ await sip.send_audio(
 )
 ```
 
-
-The path should be absolute.
+The WAV file path should be absolute.
 
 Example:
 
@@ -335,7 +289,6 @@ await sip.send_audio(
 )
 ```
 
-
 Windows example:
 
 ```python
@@ -353,13 +306,11 @@ await sip.send_audio(
 )
 ```
 
-
 ---
 
 # Automatic conversation mode
 
 NetSIP supports automatic WAV playback during active calls.
-
 
 Available files:
 
@@ -369,7 +320,6 @@ sip.wf_b
 sip.wf_c
 ```
 
-
 Enable:
 
 ```python
@@ -378,13 +328,11 @@ sip.wf_a = "audio/message.wav"
 sip.autospeak = True
 ```
 
-
 Disable:
 
 ```python
 sip.autospeak = False
 ```
-
 
 ---
 
@@ -396,13 +344,11 @@ Registered accounts are available in:
 sip.clients
 ```
 
-
 Example:
 
 ```python
 sip.clients["1001"]
 ```
-
 
 Possible fields:
 
@@ -413,7 +359,6 @@ current_state
 audio_state
 remote_number
 ```
-
 
 Call states:
 
@@ -426,7 +371,6 @@ streaming
 disconnected
 ```
 
-
 ---
 
 # Logs
@@ -437,7 +381,6 @@ NetSIPCore logs are available:
 sip.sipcore_log
 ```
 
-
 Example:
 
 ```python
@@ -445,19 +388,17 @@ for line in sip.sipcore_log:
     print(line)
 ```
 
-
 ---
 
 # Examples
 
-Example application:
+Example applications are available in the GitHub repository:
 
 ```
-examples/simplephone.py
+examples/
 ```
 
-
-The example demonstrates:
+The examples demonstrate:
 
 * SIP registration
 * outgoing calls
@@ -467,12 +408,11 @@ The example demonstrates:
 * microphone control
 * automatic conversation mode
 
-
 ---
 
 # Documentation
 
-NetSIPCore documentation:
+Full documentation is available in the GitHub repository:
 
 ```
 docs/
@@ -481,7 +421,6 @@ docs/
  ├── BUILD.md
  └── ARCHITECTURE.md
 ```
-
 
 ---
 

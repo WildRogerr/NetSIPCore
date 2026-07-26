@@ -5,3 +5,7 @@ include/
 *.exe
 *.dll
 *.pdb
+/python/netsip/dist
+/python/netsip/src/netsip.egg-info
+/python/netsip/src/netsip/NetSIPCore
+/python/netsip/src/netsip/NetSIPCore.exe

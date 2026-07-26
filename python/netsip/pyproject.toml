@@ -42,5 +42,6 @@ where = ["src"]
 [tool.setuptools.package-data]
 netsip = [
     "NetSIPCore.exe",
+    "NetSIPCore",
     "resources/*.wav"
 ]

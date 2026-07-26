@@ -42,13 +42,21 @@ Installing the Visual C++ Redistributable resolves these errors.
 
 ## Files
 
-A typical Windows distribution contains:
+A standalone Windows distribution contains:
 
 ```
 NetSIPCore.exe
 ```
 
-If you are using the Python SDK, the executable should be placed next to the SDK module as described in the Python package documentation.
+Run the executable directly:
+
+```
+NetSIPCore.exe
+```
+
+When using the official Python SDK, the required Windows binary is included automatically with the Python package.
+
+No manual binary installation is required.
 
 ---
 
@@ -57,6 +65,11 @@ If you are using the Python SDK, the executable should be placed next to the SDK
 On first launch Windows Firewall may ask whether NetSIPCore is allowed to communicate over the network.
 
 Allow access for private networks.
+
+NetSIPCore requires network access for:
+
+- SIP communication
+- RTP audio streams
 
 ---
 
@@ -77,7 +90,7 @@ If microphone access or RTP playback does not work correctly, add **NetSIPCore.e
 
 ## Requirements
 
-Typical dependencies:
+Typical runtime dependencies:
 
 - glibc
 - libstdc++
@@ -88,7 +101,13 @@ No Visual C++ Runtime is required.
 
 ---
 
-## Permissions
+## Files
+
+A standalone Linux distribution contains:
+
+```
+NetSIPCore
+```
 
 Make the executable runnable:
 
@@ -96,11 +115,29 @@ Make the executable runnable:
 chmod +x NetSIPCore
 ```
 
+Run:
+
+```bash
+./NetSIPCore
+```
+
+When using the official Python SDK, the required Linux binary is included automatically with the Python package.
+
+No manual binary installation is required.
+
 ---
 
 ## Firewall
 
 If your firewall blocks SIP or RTP traffic, allow the required ports.
+
+Default SIP traffic:
+
+```
+UDP 5060
+```
+
+RTP ports depend on the SIP server configuration.
 
 ---
 
@@ -112,10 +149,19 @@ Example:
 
 ```
 SIP Server
-    │
-    ├── UDP 5060
-    └── RTP
+    |
+    |
+    +-- UDP 5060
+    |
+    +-- RTP Audio
 ```
+
+Required:
+
+- SIP server address
+- username
+- password
+- network connectivity
 
 ---
 
@@ -143,6 +189,8 @@ NetSIPCore listens on:
 
 This interface is used by the official Python SDK.
 
+Communication is performed using JSON commands over TCP.
+
 ---
 
 # Verifying installation
@@ -152,8 +200,8 @@ Run NetSIPCore.
 A successful startup should produce output similar to:
 
 ```
-CONNECTING...
-TCP connected
+SIPCore initialized
+TCP server started
 ```
 
 The engine is now ready to receive JSON commands.
@@ -168,6 +216,12 @@ Install:
 
 Microsoft Visual C++ Redistributable 2015–2022 (x64)
 
+Download:
+
+```
+https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist
+```
+
 ---
 
 ## No microphone
@@ -177,6 +231,7 @@ Check:
 - Windows Privacy Settings
 - Antivirus trusted applications
 - Audio device availability
+- Correct audio backend configuration
 
 ---
 
@@ -186,7 +241,8 @@ Check:
 
 - speaker is not muted
 - output device is available
-- RTP stream is established
+- SIP call is established
+- RTP stream is active
 
 ---
 
@@ -198,7 +254,7 @@ Verify:
 - username
 - password
 - network connectivity
-- firewall
+- firewall settings
 
 ---
 
@@ -207,7 +263,33 @@ Verify:
 Ensure that:
 
 - NetSIPCore is running
-- no other process is using TCP port 4890
+- TCP port 4890 is available
+- no other process uses the same port
+
+---
+
+# Python SDK
+
+The official Python SDK is available separately.
+
+Install:
+
+```bash
+pip install netsip
+```
+
+The Python package includes the required NetSIPCore native binary automatically.
+
+Supported platforms:
+
+- Windows x64
+- Linux x64
+
+The SDK communicates with NetSIPCore using:
+
+```
+TCP 127.0.0.1:4890
+```
 
 ---
 
@@ -216,23 +298,23 @@ Ensure that:
 See:
 
 ```
-docs/JSON.md
+:contentReference[oaicite:0]{index=0}
 ```
 
-for the TCP protocol.
+for the TCP JSON protocol.
 
 See:
 
 ```
-docs/API.md
+:contentReference[oaicite:1]{index=1}
 ```
 
-for the Python SDK.
+for the Python SDK documentation.
 
 See:
 
 ```
-examples/
+:contentReference[oaicite:2]{index=2}
 ```
 
 for example applications.
