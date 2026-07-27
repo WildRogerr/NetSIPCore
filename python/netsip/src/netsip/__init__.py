@@ -7,7 +7,7 @@
 # version 2 as published by the Free Software Foundation.
 #
 
-__version__ = "1.0.0"
+__version__ = "1.0.2"
 
 from .netsip import SIPManager
 
