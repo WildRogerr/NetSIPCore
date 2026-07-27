@@ -90,7 +90,7 @@ class SimplePhone:
                 await self.mic_off_on()
                 print()
             elif menu_number == "0":
-                self.caller.close_sipcore()
+                await self.caller.close_sipcore()
                 await asyncio.sleep(1)
                 return
             

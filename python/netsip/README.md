@@ -167,7 +167,7 @@ async def main():
         )
 
 
-    sip.close_sipcore()
+    await sip.close_sipcore()
 
 
 

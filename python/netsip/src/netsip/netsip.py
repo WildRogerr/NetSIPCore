@@ -378,7 +378,8 @@ class SIPManager():
         self.socket_queue.put(json.copy())
 
 
-    def close_sipcore(self):
-        shutdown = {}
-        shutdown['command'] = 'destroy'
-        asyncio.create_task(self.send_json(shutdown))
+    async def close_sipcore(self):
+        await self.send_json({"command": "destroy"})
+        if self.sipcore_process is not None:
+            await asyncio.to_thread(self.sipcore_process.wait)
+            self.sipcore_process = None
