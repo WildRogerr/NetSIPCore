@@ -17,7 +17,7 @@ SIPCall::SIPCall(pj::Account& acc,int call_id):Call(acc, call_id) {}
 SIPCall::~SIPCall()
 {
     std::cout
-        << "CALL DESTROYED"
+        << "Call destroyed"
         << std::endl;
 }
 
@@ -60,7 +60,7 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
     }
 
     std::cout
-        << "[CALL STATE] "
+        << "CALL STATE "
         << state
         << " | "
         << info.lastStatusCode
@@ -121,7 +121,7 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
             catch (pj::Error& err)
             {
                 std::cout
-                    << "MEDIA GET ERROR: "
+                    << "Media get error: "
                     << err.info()
                     << std::endl;
 
@@ -138,7 +138,7 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 catch (pj::Error &err)
                 {
                     std::cout
-                        << "MIC CONNECT ERROR: "
+                        << "Mic connect error: "
                         << err.info()
                         << std::endl;
                 }
@@ -155,14 +155,14 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 catch (pj::Error &err)
                 {
                     std::cout
-                        << "SPEAKER CONNECT ERROR: "
+                        << "Speaker connect error: "
                         << err.info()
                         << std::endl;
                 }
             }
 
             std::cout
-                << "[MEDIA CONNECTED]"
+                << "Media connected"
                 << std::endl;
 
         }
@@ -199,7 +199,7 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 catch (pj::Error &err)
                 {
                     std::cout
-                        << "MIC DISCONNECT ERROR: "
+                        << "Mic disconnect error: "
                         << err.info()
                         << std::endl;
                 }
@@ -216,14 +216,14 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 catch (pj::Error &err)
                 {
                     std::cout
-                        << "SPEAKER DISCONNECT ERROR: "
+                        << "Speaker disconnect error: "
                         << err.info()
                         << std::endl;
                 }
             }
             
             std::cout
-                << "[MEDIA DISCONNECTED]"
+                << "Media disconnected"
                 << std::endl;
         }
     }

@@ -16,7 +16,7 @@ void SIPAccount::onRegState(pj::OnRegStateParam &prm)
     pj::AccountInfo info = getInfo();
 
     std::cout
-        << "REGISTER STATE: "
+        << "Register state: "
         << prm.code
         << " "
         << prm.reason

@@ -108,7 +108,7 @@ void SIPCore::destroy()
     catch (pj::Error& err)
     {
         std::cout
-            << "DESTROY ERROR: "
+            << "Destroy error: "
             << err.info()
             << std::endl;
     }
@@ -118,7 +118,7 @@ void SIPCore::destroy()
 void SIPCore::run()
 {
 
-    std::cout << "RUN LOOP START" << std::endl;
+    std::cout << "Run loop start" << std::endl;
     while (initialized)
     {
         endpoint.libHandleEvents(10);
@@ -161,7 +161,7 @@ void SIPCore::registerAccount(
         )
         {
             std::cout
-                << "[STATE CALLBACK] "
+                << "STATE CALLBACK "
                 << username
                 << " -> "
                 << state
@@ -226,7 +226,7 @@ void SIPCore::registerAccount(
     catch (pj::Error& err)
     {
         std::cout
-            << "PJSIP ERROR: "
+            << "PJSIP error: "
             << err.info()
             << std::endl;
     }
@@ -300,7 +300,7 @@ void SIPCore::disconnectAccount(const std::string& username)
     );
 
     std::cout
-        << "ACCOUNT REMOVED: "
+        << "Account removed: "
         << username
         << std::endl;
 
@@ -351,14 +351,14 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
                 std::lock_guard<std::mutex> lock(callRemoveMutex);
                 pendingCallRemove.push(username);
                 std::cout
-                    << "CALL DISCONNECTED: "
+                    << "Call disconnected: "
                     << username
                     << std::endl;
             }
         };
 
     std::cout
-        << "CALL STORED: "
+        << "Call stored: "
         << username
         << std::endl;
 
@@ -407,14 +407,14 @@ void SIPCore::makeCall(
         call->makeCall(uri,prm);
 
         std::cout
-            << "CALL STARTED: "
+            << "Call started: "
             << number
             << std::endl;
     }
     catch (pj::Error& err)
     {
         std::cout
-            << "CALL ERROR: "
+            << "Call error: "
             << err.info()
             << std::endl;
     }
@@ -499,7 +499,7 @@ void SIPCore::processPendingCallRemove()
         }
 
         std::cout
-            << "CALL REMOVED: "
+            << "Call removed: "
             << username
             << std::endl;
     }
@@ -735,7 +735,7 @@ void SIPCore::sendState(
 
     tcpServer.sendMessage(json);
 
-    // std::cout << "[STATE] " << json << std::endl;
+    // std::cout << "STATE " << json << std::endl;
 }
 
 
@@ -746,7 +746,7 @@ void SIPCore::handleTcpMessage(const std::string& msg)
     if (!cmd.valid)
     {
         std::cout
-            << "INVALID JSON"
+            << "Invalid json"
             << std::endl;
 
         return;

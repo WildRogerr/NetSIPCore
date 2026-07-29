@@ -83,14 +83,14 @@ void RTPPlayer::play(
         playing = true;
 
         std::cout
-            << "RTP PLAY STARTED: "
+            << "RTP play started: "
             << wavFile
             << std::endl;
     }
     catch (pj::Error& err)
     {
         std::cout
-            << "RTP PLAY ERROR: "
+            << "RTP play error: "
             << err.info()
             << std::endl;
 

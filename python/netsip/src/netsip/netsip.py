@@ -296,7 +296,7 @@ class SIPManager():
                         socket.AF_INET,
                         socket.SOCK_STREAM
                     )
-                    print("CONNECTING...")
+                    print("Connecting...")
                     self.sock.connect((self.sip_core_host, self.sip_core_port))
                     self.sock.settimeout(0.5)
                     print("TCP connected")

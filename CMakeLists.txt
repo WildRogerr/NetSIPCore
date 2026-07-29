@@ -11,7 +11,7 @@ add_executable(SIPCore
     src/sip/Account.cpp
     src/sip/Call.cpp
     src/sip/InfoModule.cpp
-    src/tcp/TCPServer.cpp
+    src/tcp/TcpServer.cpp
     src/utils/Json.cpp
     src/utils/RTP.cpp
 )

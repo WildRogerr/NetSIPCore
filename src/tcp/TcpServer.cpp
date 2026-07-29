@@ -7,7 +7,7 @@
  * version 2 as published by the Free Software Foundation.
  */
 
-#include "TCPServer.hpp"
+#include "TcpServer.hpp"
 
 
 
@@ -17,6 +17,16 @@ static inline void socket_close(SOCKET s)
     closesocket(s);
 #else
     close(s);
+#endif
+}
+
+
+static inline void socket_shutdown(SOCKET s)
+{
+#ifdef _WIN32
+    shutdown(s, SD_BOTH);
+#else
+    shutdown(s, SHUT_RDWR);
 #endif
 }
 
@@ -38,11 +48,18 @@ inline const void* sockopt_cast(const void* p)
 TCPServer::TCPServer() {}
 
 
+TCPServer::~TCPServer()
+{
+    stop();
+}
+
+
 void TCPServer::init()
 {
     #ifdef _WIN32
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2,2), &wsaData);
+        initializedWsa = true;
     #else
         signal(SIGPIPE, SIG_IGN);
     #endif
@@ -69,6 +86,8 @@ void TCPServer::run(uint16_t port)
                 << "socket() failed"
                 << std::endl;
 
+            running = false;
+
             return;
         }
 
@@ -89,24 +108,29 @@ void TCPServer::run(uint16_t port)
 
         if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR)
         {   
-
+            socket_shutdown(serverSocket);
             socket_close(serverSocket);
             serverSocket = INVALID_SOCKET;
             std::cout
                 << "bind() failed"
                 << std::endl;
 
+            running = false;
+
             return;
         }
 
         if (listen(serverSocket, 1) == SOCKET_ERROR)
-        {
+        {   
+            socket_shutdown(serverSocket);
             socket_close(serverSocket);
             serverSocket = INVALID_SOCKET;
             
             std::cout
                 << "listen() failed"
                 << std::endl;
+
+            running = false;
 
             return;
         }
@@ -136,7 +160,8 @@ void TCPServer::run(uint16_t port)
                 std::lock_guard<std::mutex> lock(clientMutex);
 
                 if (clientSocket != INVALID_SOCKET)
-                {
+                {   
+                    socket_shutdown(newClient);
                     socket_close(newClient);
 
                     std::cout
@@ -166,6 +191,11 @@ void TCPServer::run(uint16_t port)
                     currentClient = clientSocket;
                 }
 
+                if(currentClient == INVALID_SOCKET)
+                {
+                    break;
+                }
+
                 int bytes = recv(
                     currentClient,
                     buffer,
@@ -181,7 +211,8 @@ void TCPServer::run(uint16_t port)
 
                     {
                         std::lock_guard<std::mutex> lock(clientMutex);
-
+                        
+                        socket_shutdown(clientSocket);
                         socket_close(clientSocket);
                         clientSocket = INVALID_SOCKET;
                     }
@@ -206,7 +237,7 @@ void TCPServer::run(uint16_t port)
 
                     recvBuffer.erase(0, pos + 1);
 
-                    // std::cout << "[TCP RECEIVE] " << msg << std::endl;
+                    // std::cout << "TCP RECEIVE " << msg << std::endl;
 
                     if (onMessage)
                     {
@@ -223,30 +254,36 @@ void TCPServer::stop()
 {
     running = false;
 
+    if(serverSocket != INVALID_SOCKET)
+    {   
+        socket_shutdown(serverSocket);
+        socket_close(serverSocket);
+        serverSocket = INVALID_SOCKET;
+    }
+
     {
         std::lock_guard<std::mutex> lock(clientMutex);
 
-        if (clientSocket != INVALID_SOCKET)
-        {
+        if(clientSocket != INVALID_SOCKET)
+        {   
+            socket_shutdown(clientSocket);
             socket_close(clientSocket);
             clientSocket = INVALID_SOCKET;
         }
     }
 
-    if (serverSocket != INVALID_SOCKET)
-    {
-        socket_close(serverSocket);
-        serverSocket = INVALID_SOCKET;
-    }
-
-    if (serverThread.joinable())
+    if(serverThread.joinable())
     {
         serverThread.join();
     }
 
-    #ifdef _WIN32
+#ifdef _WIN32
+    if(initializedWsa)
+    {
         WSACleanup();
-    #endif
+        initializedWsa = false;
+    }
+#endif
 }
 
 
@@ -289,6 +326,7 @@ void TCPServer::sendMessage(const std::string& msg)
         {
             std::lock_guard<std::mutex> lock(clientMutex);
 
+            socket_shutdown(clientSocket);
             socket_close(clientSocket);
             clientSocket = INVALID_SOCKET;
         }
@@ -296,6 +334,6 @@ void TCPServer::sendMessage(const std::string& msg)
         return;
     }
 
-    // std::cout << "[TCP SEND] " << msg << std::endl;
+    // std::cout << "TCP SEND " << msg << std::endl;
 
 }

@@ -13,6 +13,7 @@
 #include <thread>
 #include <mutex>
 #include <iostream>
+#include <atomic>
 
 
 
@@ -37,6 +38,7 @@ class TCPServer
 public:
 
     TCPServer();
+    ~TCPServer();
     void init();
     void run(uint16_t port);
     void stop();
@@ -49,7 +51,8 @@ private:
     SOCKET clientSocket = INVALID_SOCKET;
     std::function<void(const std::string&)> onMessage;
     std::thread serverThread;
-    bool running = false;
+    std::atomic<bool> running{false};
     std::mutex clientMutex;
+    bool initializedWsa = false;
 
 };
