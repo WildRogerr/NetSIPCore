@@ -16,6 +16,7 @@ struct JsonCommand
 {
     std::string command;
     std::string server;
+    std::string proxy;
     std::string username;
     std::string password;
     std::string remote;

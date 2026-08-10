@@ -35,7 +35,8 @@ class SIPCore {
         void registerAccount(
             const std::string& server,
             const std::string& username,
-            const std::string& password
+            const std::string& password,
+            const std::string& proxy
         );
         void disconnectAccount(const std::string& username);
         void setupCall(const std::string& username,std::shared_ptr<SIPCall> call);
@@ -44,6 +45,7 @@ class SIPCore {
             const std::string& number,
             const std::string& server
         );
+        bool ensureAudioDevice();
         void answerCall(const std::string& username);
         void hangupCall(const std::string& username);
         void processPendingStates();
@@ -77,6 +79,7 @@ class SIPCore {
             std::string command;
             std::string username;
             std::string server;
+            std::string proxy;
             std::string password;
             std::string remote;
             std::string device;
@@ -90,6 +93,7 @@ class SIPCore {
         std::mutex callsMutex;
         std::atomic<bool> initialized{false};
         std::atomic<bool> destroyed{false};
+        std::atomic<bool> nullDev{false};
         struct DeviceState
         {
             bool microphone = true;

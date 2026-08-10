@@ -160,7 +160,8 @@ void SIPCore::run()
 void SIPCore::registerAccount(
     const std::string& server,
     const std::string& username,
-    const std::string& password
+    const std::string& password,
+    const std::string& proxy
 )
 {
 
@@ -222,6 +223,13 @@ void SIPCore::registerAccount(
         config.regConfig.registrarUri =
             "sip:" + server;
 
+        if (!proxy.empty())
+        {
+            config.sipConfig.proxies.push_back(
+                "sip:" + proxy
+            );
+        }
+
         pj::AuthCredInfo cred(
             "digest",
             "*",
@@ -234,11 +242,25 @@ void SIPCore::registerAccount(
             cred
         );
 
+        {
+            std::lock_guard<std::mutex> lock(accountsMutex);
+
+            if (accounts.find(username) != accounts.end())
+            {
+                std::cout
+                    << "Account already registered: "
+                    << username
+                    << std::endl;
+
+                return;
+            }
+        }
+
         account->create(config);
 
         {
-        std::lock_guard<std::mutex> lock(accountsMutex);
-        accounts[username] = account;
+            std::lock_guard<std::mutex> lock(accountsMutex);
+            accounts[username] = account;
         }
 
         std::cout
@@ -419,25 +441,7 @@ void SIPCore::makeCall(
         "@" +
         server;
 
-    try
-    {
-        auto& adm = endpoint.audDevManager();
-
-        int captureDev = adm.getCaptureDev();
-        int playbackDev = adm.getPlaybackDev();
-
-        adm.getDevInfo(captureDev);
-        adm.getDevInfo(playbackDev);
-
-    }
-    catch (const pj::Error& err)
-    {
-        std::cout
-            << "No usable audio device, switching to Null Audio Device: "
-            << std::endl;
-
-        endpoint.audDevManager().setNullDev();
-    }
+    ensureAudioDevice();
 
     pj::CallOpParam prm(true);
 
@@ -465,6 +469,48 @@ void SIPCore::makeCall(
 }
 
 
+bool SIPCore::ensureAudioDevice()
+{
+    if (nullDev)
+        return false;
+
+    try
+    {
+        auto& adm = endpoint.audDevManager();
+
+        int captureDev = adm.getCaptureDev();
+        int playbackDev = adm.getPlaybackDev();
+
+        adm.getDevInfo(captureDev);
+        adm.getDevInfo(playbackDev);
+
+        return true;
+    }
+    catch (const pj::Error&)
+    {
+        std::cout
+            << "No usable audio device, switching to Null Audio Device"
+            << std::endl;
+
+        try
+        {
+            endpoint.audDevManager().setNullDev();
+            nullDev = true;
+            return false;
+        }
+        catch (const pj::Error& err)
+        {
+            std::cout
+                << "Failed to set Null Audio Device: "
+                << err.info()
+                << std::endl;
+
+            return false;
+        }
+    }
+}
+
+
 void SIPCore::answerCall(const std::string& username)
 {
     std::shared_ptr<SIPCall> call;
@@ -478,6 +524,8 @@ void SIPCore::answerCall(const std::string& username)
 
         call = it->second;
     }
+
+    ensureAudioDevice();
 
     pj::CallOpParam prm;
 
@@ -592,7 +640,8 @@ void SIPCore::processPendingCommands()
             registerAccount(
                 cmd.server,
                 cmd.username,
-                cmd.password
+                cmd.password,
+                cmd.proxy
             );
         }
 
@@ -732,6 +781,69 @@ void SIPCore::processPendingCommands()
 }
 
 
+static std::string escapeJson(const std::string& value)
+{
+    std::string result;
+
+    for (unsigned char c : value)
+    {
+        switch (c)
+        {
+            case '"':
+                result += "\\\"";
+                break;
+
+            case '\\':
+                result += "\\\\";
+                break;
+
+            case '\b':
+                result += "\\b";
+                break;
+
+            case '\f':
+                result += "\\f";
+                break;
+
+            case '\n':
+                result += "\\n";
+                break;
+
+            case '\r':
+                result += "\\r";
+                break;
+
+            case '\t':
+                result += "\\t";
+                break;
+
+            default:
+                if (c < 0x20)
+                {
+                    char buffer[7];
+
+                    std::snprintf(
+                        buffer,
+                        sizeof(buffer),
+                        "\\u%04x",
+                        c
+                    );
+
+                    result += buffer;
+                }
+                else
+                {
+                    result += c;
+                }
+
+                break;
+        }
+    }
+
+    return result;
+}
+
+
 void SIPCore::sendState(
     const std::string& username,
     const std::string& state,
@@ -764,15 +876,21 @@ void SIPCore::sendState(
 
     std::string json =
         "{"
-        "\"username\":\"" + username + "\","
-        "\"state\":\"" + state + "\"";
+        "\"username\":\"" + escapeJson(username) + "\","
+        "\"state\":\"" + escapeJson(state) + "\"";
 
     if (!cleanRemote.empty())
     {
-        json += ",\"remote\":\"" + cleanRemote + "\"";
+        json +=
+            ",\"remote\":\"" +
+            escapeJson(cleanRemote) +
+            "\"";
     }
 
-    json += ",\"audio_state\":\"" + audio_state + "\"";
+    json +=
+        ",\"audio_state\":\"" +
+        escapeJson(audio_state) +
+        "\"";
 
     json += "}";
 
@@ -802,6 +920,7 @@ void SIPCore::handleTcpMessage(const std::string& msg)
             cmd.command,
             cmd.username,
             cmd.server,
+            cmd.proxy,
             cmd.password,
             cmd.remote,
             cmd.device,

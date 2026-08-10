@@ -13,7 +13,6 @@
 
 static std::string extract(const std::string& json, const std::string& key)
 {
-    
     std::string search =
         "\"" + key + "\"";
 
@@ -26,27 +25,77 @@ static std::string extract(const std::string& json, const std::string& key)
     }
 
     size_t colon =
-        json.find(':', keyPos);
+        json.find(':', keyPos + search.length());
 
-    size_t firstQuote =
-        json.find('"', colon + 1);
-
-    size_t secondQuote =
-        json.find('"', firstQuote + 1);
-
-    if (
-        firstQuote == std::string::npos ||
-        secondQuote == std::string::npos
-    )
+    if (colon == std::string::npos)
     {
         return "";
     }
 
-    return json.substr(
-        firstQuote + 1,
-        secondQuote - firstQuote - 1
-    );
+    size_t firstQuote =
+        json.find('"', colon + 1);
 
+    if (firstQuote == std::string::npos)
+    {
+        return "";
+    }
+
+    std::string result;
+
+    bool escaped = false;
+
+    for (size_t i = firstQuote + 1; i < json.length(); ++i)
+    {
+        char c = json[i];
+
+        if (escaped)
+        {
+            switch (c)
+            {
+                case '"':
+                    result += '"';
+                    break;
+
+                case '\\':
+                    result += '\\';
+                    break;
+
+                case 'n':
+                    result += '\n';
+                    break;
+
+                case 'r':
+                    result += '\r';
+                    break;
+
+                case 't':
+                    result += '\t';
+                    break;
+
+                default:
+                    result += c;
+                    break;
+            }
+
+            escaped = false;
+            continue;
+        }
+
+        if (c == '\\')
+        {
+            escaped = true;
+            continue;
+        }
+
+        if (c == '"')
+        {
+            return result;
+        }
+
+        result += c;
+    }
+
+    return "";
 }
 
 
@@ -61,6 +110,9 @@ JsonCommand Json::parse(const std::string& raw)
 
     cmd.server =
         extract(raw, "server");
+
+    cmd.proxy =
+        extract(raw, "proxy");
 
     cmd.username =
         extract(raw, "username");
