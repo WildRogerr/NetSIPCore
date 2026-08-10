@@ -7,7 +7,7 @@
  * version 2 as published by the Free Software Foundation.
  */
 
- #include "SIPCore.hpp"
+#include "SIPCore.hpp"
 
 
 
@@ -34,17 +34,39 @@ void SIPCore::init()
     // ep_cfg.logConfig.consoleLevel = 6;
 
     endpoint.libInit(ep_cfg);
-
+    
     pj::TransportConfig transport_cfg;
-    transport_cfg.port = 5060;
-
-    endpoint.transportCreate(
-        PJSIP_TRANSPORT_UDP,
-        transport_cfg
-    );
+    
+    try
+    {
+        transport_cfg.port = 5060;
+        endpoint.transportCreate(
+            PJSIP_TRANSPORT_UDP,
+            transport_cfg
+        );
+    }
+    catch (...)
+    {
+        transport_cfg.port = 0;
+        endpoint.transportCreate(
+            PJSIP_TRANSPORT_UDP,
+            transport_cfg
+        );
+    }
 
     endpoint.libStart();
 
+    endpoint.codecSetPriority("PCMA/8000/1", 255);
+    endpoint.codecSetPriority("PCMU/8000/1", 254);
+    endpoint.codecSetPriority("G722/16000/1", 253);
+    endpoint.codecSetPriority("speex/8000/1", 252);
+    endpoint.codecSetPriority("speex/16000/1", 251);
+    endpoint.codecSetPriority("speex/32000/1", 250);
+    endpoint.codecSetPriority("GSM/8000/1", 249);
+    endpoint.codecSetPriority("iLBC/8000/1", 248);
+    endpoint.codecSetPriority("L16/44100/1", 247);
+    endpoint.codecSetPriority("L16/44100/2", 246);
+    
     InfoModule::init();
 
     initialized = true;
@@ -391,16 +413,37 @@ void SIPCore::makeCall(
 
     setupCall(username,call);
 
-    pj::CallOpParam prm(true);
-
-    prm.opt.audioCount = 1;
-    prm.opt.videoCount = 0;
-
     std::string uri =
         "sip:" +
         number +
         "@" +
         server;
+
+    try
+    {
+        auto& adm = endpoint.audDevManager();
+
+        int captureDev = adm.getCaptureDev();
+        int playbackDev = adm.getPlaybackDev();
+
+        adm.getDevInfo(captureDev);
+        adm.getDevInfo(playbackDev);
+
+    }
+    catch (const pj::Error& err)
+    {
+        std::cout
+            << "No usable audio device, switching to Null Audio Device: "
+            << std::endl;
+
+        endpoint.audDevManager().setNullDev();
+    }
+
+    pj::CallOpParam prm(true);
+
+    prm.opt.audioCount = 1;
+    prm.opt.videoCount = 0;
+    prm.opt.textCount = 0;
 
     try
     {
