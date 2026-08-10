@@ -91,7 +91,7 @@ class SIPManager():
             print("[SIPCORE]", line)
 
 
-    async def subscriber_registration(self, server:str, number:str, password:str):
+    async def subscriber_registration(self, server:str, number:str, password:str, proxy:str):
         self.registration_state = False
 
         event = asyncio.Event()
@@ -99,6 +99,7 @@ class SIPManager():
 
         registration_data = {
             'server': server,
+            'proxy': proxy,
             'username': number,
             'password': password,
             'audio_state': 'stop',
@@ -108,6 +109,7 @@ class SIPManager():
 
         client = {
             'server': server,
+            'proxy': proxy,
             'username': number,
             'audio_state': 'stop',
             'current_state': 'registering',
@@ -122,8 +124,10 @@ class SIPManager():
         except asyncio.TimeoutError:
             print(f"❌ {number}: Registration timeout")
             self.reg_events.pop(number, None)
+            await self.subscriber_disconnect(number)
             return
 
+        self.reg_events.pop(number, None)
         self.registration_state = True
         self.stop_audio = False
 
@@ -136,8 +140,7 @@ class SIPManager():
         self.registration_state = False
         client['command'] = 'disconnect'
         await self.send_json(client)
-        if number in self.clients:
-            del self.clients[number]
+        self.clients.pop(number, None)
 
 
     async def call(self, number: str, calling_number:str):
