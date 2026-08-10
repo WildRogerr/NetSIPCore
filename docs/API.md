@@ -30,6 +30,7 @@ Required fields
 |--------|------|
 | command | string |
 | server | string |
+| proxy | string |
 | username | string |
 | password | string |
 
@@ -39,9 +40,12 @@ Example
 {
     "command":"registration",
     "server":"pbx.company.com",
+    "proxy":"server:port",
     "username":"1001",
     "password":"secret"
 }
+
+If proxy is omitted or empty, the account is registered without a SIP proxy.
 ```
 
 ---
@@ -101,7 +105,7 @@ Terminates current call.
 
 ## mute
 
-Disables audio device.
+Disables audio input or output for the current call.
 
 Fields
 
@@ -123,7 +127,7 @@ Example
 
 ## unmute
 
-Enables audio device.
+Enables audio input or output for the current call.
 
 ```json
 {
