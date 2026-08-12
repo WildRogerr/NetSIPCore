@@ -117,6 +117,9 @@ JsonCommand Json::parse(const std::string& raw)
     cmd.username =
         extract(raw, "username");
 
+    cmd.auth_username =
+        extract(raw, "auth_username");
+
     cmd.password =
         extract(raw, "password");
 

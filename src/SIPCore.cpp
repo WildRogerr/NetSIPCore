@@ -160,6 +160,7 @@ void SIPCore::run()
 void SIPCore::registerAccount(
     const std::string& server,
     const std::string& username,
+    const std::string& auth_username,
     const std::string& password,
     const std::string& proxy
 )
@@ -229,11 +230,14 @@ void SIPCore::registerAccount(
                 "sip:" + proxy
             );
         }
+        
+        const std::string authUser = 
+            auth_username.empty() ? username : auth_username;
 
         pj::AuthCredInfo cred(
             "digest",
             "*",
-            username,
+            authUser,
             0,
             password
         );
@@ -640,6 +644,7 @@ void SIPCore::processPendingCommands()
             registerAccount(
                 cmd.server,
                 cmd.username,
+                cmd.auth_username,
                 cmd.password,
                 cmd.proxy
             );
@@ -919,6 +924,7 @@ void SIPCore::handleTcpMessage(const std::string& msg)
         pendingCommands.push({
             cmd.command,
             cmd.username,
+            cmd.auth_username,
             cmd.server,
             cmd.proxy,
             cmd.password,

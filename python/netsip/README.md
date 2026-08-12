@@ -196,7 +196,9 @@ Register SIP account:
 await sip.subscriber_registration(
     server,
     number,
-    password
+    password,
+    proxy,
+    auth_username
 )
 ```
 

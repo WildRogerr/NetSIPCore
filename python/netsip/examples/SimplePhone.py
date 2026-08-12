@@ -100,16 +100,19 @@ class SimplePhone:
             print('Subscriber registered!')
             return
         server = await asyncio.to_thread(input, 'Enter server: ')
+        proxy = await asyncio.to_thread(input, 'Enter proxy server or skip: ')
         login = await asyncio.to_thread(input, 'Enter number: ')
+        username = await asyncio.to_thread(input, 'Enter username or skip: ')
         password = await asyncio.to_thread(input, 'Enter password: ')
         self.subscriber = {
             "server":server,
-            "proxy":"",
+            "proxy":proxy,
             "login":login,
+            "username":username,
             "password":password
         }
-        await self.caller.subscriber_registration(self.subscriber["server"],self.subscriber["login"],self.subscriber["password"],self.subscriber["proxy"])
-        if self.caller.registration_state:
+        await self.caller.subscriber_registration(self.subscriber["server"],self.subscriber["login"],self.subscriber["password"],self.subscriber["proxy"],self.subscriber["username"])
+        if self.caller.last_registration_state:
             self.reg_state = True
             asyncio.create_task(self.ringing_indicator())
             asyncio.create_task(self.answer_indicator())

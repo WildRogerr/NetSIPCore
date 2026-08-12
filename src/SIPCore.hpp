@@ -35,6 +35,7 @@ class SIPCore {
         void registerAccount(
             const std::string& server,
             const std::string& username,
+            const std::string& auth_username,
             const std::string& password,
             const std::string& proxy
         );
@@ -78,6 +79,7 @@ class SIPCore {
         {
             std::string command;
             std::string username;
+            std::string auth_username;
             std::string server;
             std::string proxy;
             std::string password;

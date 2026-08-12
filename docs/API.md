@@ -32,6 +32,7 @@ Required fields
 | server | string |
 | proxy | string |
 | username | string |
+| auth_username | string |
 | password | string |
 
 Example
@@ -42,10 +43,13 @@ Example
     "server":"pbx.company.com",
     "proxy":"server:port",
     "username":"1001",
+    "auth_username":"1001@pbx.company.com",
     "password":"secret"
 }
 
 If proxy is omitted or empty, the account is registered without a SIP proxy.
+
+If auth_username is omitted or empty, the account is registered using the username as the auth_username.
 ```
 
 ---

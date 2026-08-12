@@ -58,7 +58,7 @@ class SIPManager():
         self.sip_core_host = "127.0.0.1"
         self.sip_core_port = 4890
         self.socket_queue = queue.Queue()
-        self.registration_state = False
+        self.last_registration_state = False
         self.stop_audio = True
         self.autospeak = False
         
@@ -91,16 +91,27 @@ class SIPManager():
             print("[SIPCORE]", line)
 
 
-    async def subscriber_registration(self, server:str, number:str, password:str, proxy:str):
-        self.registration_state = False
+    async def subscriber_registration(
+                                self,
+                                server:str,
+                                number:str,
+                                password:str,
+                                proxy:str | None = None,
+                                auth_username:str | None = None
+                                ):
+        
+        self.last_registration_state = False
 
         event = asyncio.Event()
         self.reg_events[number] = event
 
+        auth = auth_username or number
+
         registration_data = {
             'server': server,
-            'proxy': proxy,
+            'proxy': proxy or "",
             'username': number,
+            'auth_username': auth,
             'password': password,
             'audio_state': 'stop',
             'current_state': 'registering',
@@ -109,8 +120,9 @@ class SIPManager():
 
         client = {
             'server': server,
-            'proxy': proxy,
+            'proxy': proxy or "",
             'username': number,
+            'auth_username': auth,
             'audio_state': 'stop',
             'current_state': 'registering',
             'command': 'registration'
@@ -128,7 +140,7 @@ class SIPManager():
             return
 
         self.reg_events.pop(number, None)
-        self.registration_state = True
+        self.last_registration_state = True
         self.stop_audio = False
 
 
@@ -137,7 +149,7 @@ class SIPManager():
         if client is None:
             return
         self.stop_audio = True
-        self.registration_state = False
+        self.last_registration_state = False
         client['command'] = 'disconnect'
         await self.send_json(client)
         self.clients.pop(number, None)

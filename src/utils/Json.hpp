@@ -18,6 +18,7 @@ struct JsonCommand
     std::string server;
     std::string proxy;
     std::string username;
+    std::string auth_username;
     std::string password;
     std::string remote;
     std::string current_state;
@@ -25,7 +26,6 @@ struct JsonCommand
     std::string device;
     std::string audio_path;
     bool valid = false;
-    
 };
 
 
