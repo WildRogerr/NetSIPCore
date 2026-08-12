@@ -17,7 +17,7 @@
 # See the GNU General Public License for more details.
 #
 
-__version__ = "1.1.1"
+__version__ = "1.1.2"
 
 from .netsip import SIPManager
 
