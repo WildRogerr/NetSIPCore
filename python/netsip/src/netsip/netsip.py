@@ -102,6 +102,8 @@ class SIPManager():
         
         self.last_registration_state = False
 
+        await self.subscriber_disconnect(number)
+
         event = asyncio.Event()
         self.reg_events[number] = event
 
@@ -136,7 +138,9 @@ class SIPManager():
         except asyncio.TimeoutError:
             print(f"❌ {number}: Registration timeout")
             self.reg_events.pop(number, None)
-            await self.subscriber_disconnect(number)
+            self.clients.pop(number, None)
+            self.stop_audio = True
+            self.last_registration_state = False
             return
 
         self.reg_events.pop(number, None)
@@ -343,9 +347,12 @@ class SIPManager():
                         if not client:
                             continue
 
-                        client['current_state'] = state
-                        client['audio_state'] = audio_state
-                        client['remote_number'] = remote_number
+                        if state == 'registered' and client['current_state'] in ('confirmed','streaming','incoming','ringing'):
+                            client['audio_state'] = audio_state
+                        else:
+                            client['current_state'] = state
+                            client['audio_state'] = audio_state
+                            client['remote_number'] = remote_number
                         
                         if state == "registered":
                             event = self.reg_events.get(username)

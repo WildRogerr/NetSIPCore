@@ -37,7 +37,7 @@ class SIPCall : public pj::Call
     private:
 
         pj::AudioMedia* currentAudioMedia = nullptr;
-        bool mediaConnected = false;
+        bool mediaActive = false;
         bool speakerEnabled = true;
         bool microphoneEnabled = true;
         RTPPlayer rtpPlayer;

@@ -202,9 +202,9 @@ void SIPCore::registerAccount(
     account->setCallCallback(
         [this, username](
             std::shared_ptr<SIPCall> call
-        )
+        ) -> bool
         {
-            setupCall(
+            return setupCall(
                 username,
                 call
             );
@@ -355,11 +355,21 @@ void SIPCore::disconnectAccount(const std::string& username)
 }
 
 
-void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> call)
+bool SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> call)
 {
-
     {
         std::lock_guard<std::mutex> lock(callsMutex);
+
+        if (calls.find(username) != calls.end())
+        {
+            std::cout
+                << "CALL REJECTED: account busy: "
+                << username
+                << std::endl;
+
+            return false;
+        }
+
         calls[username] = call;
     }
 
@@ -391,13 +401,16 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
                     remote,
                     "stop"
                 });
-                
             }
 
             if (state == "disconnected")
-            {   
-                std::lock_guard<std::mutex> lock(callRemoveMutex);
+            {
+                std::lock_guard<std::mutex> lock(
+                    callRemoveMutex
+                );
+
                 pendingCallRemove.push(username);
+
                 std::cout
                     << "Call disconnected: "
                     << username
@@ -410,6 +423,7 @@ void SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
         << username
         << std::endl;
 
+    return true;
 }
 
 
@@ -437,7 +451,10 @@ void SIPCore::makeCall(
         PJSUA_INVALID_ID
     );
 
-    setupCall(username,call);
+    if (!setupCall(username, call))
+    {
+        return;
+    }
 
     std::string uri =
         "sip:" +

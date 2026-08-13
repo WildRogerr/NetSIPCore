@@ -106,7 +106,7 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
             {
                 std::lock_guard<std::mutex> lock(mediaMutex);
 
-                if (mediaConnected)
+                if (mediaActive)
                     continue;
 
                 currentAudioMedia = static_cast<pj::AudioMedia*>(getMedia(i));
@@ -116,7 +116,6 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 if (!audioMedia)
                     continue;
 
-                mediaConnected = true;
             }
             catch (pj::Error& err)
             {
@@ -161,6 +160,11 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 }
             }
 
+            {
+                std::lock_guard<std::mutex> lock(mediaMutex);
+                mediaActive = true;
+            }
+
             std::cout
                 << "Media connected"
                 << std::endl;
@@ -172,54 +176,10 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
         else
         {
 
-            pj::AudioMedia* audioMedia = nullptr;
-
             {
                 std::lock_guard<std::mutex> lock(mediaMutex);
-
-                if (!mediaConnected)
-                    continue;
-
-                audioMedia = currentAudioMedia;
-
-                if (!audioMedia)
-                    continue;
-
-                mediaConnected = false;
+                mediaActive = false;
                 currentAudioMedia = nullptr;
-            }
-                
-            if (microphoneEnabled)
-            {
-                try
-                {
-                    adm.getCaptureDevMedia()
-                        .stopTransmit(*audioMedia);
-                }
-                catch (pj::Error &err)
-                {
-                    std::cout
-                        << "Mic disconnect error: "
-                        << err.info()
-                        << std::endl;
-                }
-            }
-
-            if (speakerEnabled)
-            {
-                try
-                {
-                    audioMedia->stopTransmit(
-                        adm.getPlaybackDevMedia()
-                    );
-                }
-                catch (pj::Error &err)
-                {
-                    std::cout
-                        << "Speaker disconnect error: "
-                        << err.info()
-                        << std::endl;
-                }
             }
             
             std::cout
@@ -238,15 +198,25 @@ int SIPCall::getCallId()
 
 void SIPCall::setSpeakerState(bool state)
 {
-    std::lock_guard<std::mutex> lock(mediaMutex);
 
-    speakerEnabled = state;
+    pj::AudioMedia* audioMedia = nullptr;
 
-    if (!mediaConnected)
-        return;
+    {
+        std::lock_guard<std::mutex> lock(mediaMutex);
 
-    if (!currentAudioMedia)
-        return;
+        if (speakerEnabled == state)
+            return;
+
+        speakerEnabled = state;
+
+        if (!mediaActive)
+            return;
+
+        audioMedia = currentAudioMedia;
+
+        if (!audioMedia)
+            return;
+    }
 
     auto& adm = pj::Endpoint::instance().audDevManager();
 
@@ -254,11 +224,11 @@ void SIPCall::setSpeakerState(bool state)
     {
         if (speakerEnabled)
         {
-            currentAudioMedia->startTransmit(adm.getPlaybackDevMedia());
+            audioMedia->startTransmit(adm.getPlaybackDevMedia());
         }
         else
         {
-            currentAudioMedia->stopTransmit(adm.getPlaybackDevMedia());
+            audioMedia->stopTransmit(adm.getPlaybackDevMedia());
         }
     }
     catch(...)
@@ -269,18 +239,24 @@ void SIPCall::setSpeakerState(bool state)
 
 void SIPCall::setMicrophoneState(bool state)
 {
-    std::lock_guard<std::mutex> lock(mediaMutex);
+    pj::AudioMedia* audioMedia = nullptr;
 
-    if (microphoneEnabled == state)
-        return;
+    {
+        std::lock_guard<std::mutex> lock(mediaMutex);
 
-    microphoneEnabled = state;
+        if (microphoneEnabled == state)
+            return;
 
-    if (!mediaConnected)
-        return;
+        microphoneEnabled = state;
 
-    if (!currentAudioMedia)
-        return;
+        if (!mediaActive)
+            return;
+        
+        audioMedia = currentAudioMedia;
+
+        if (!audioMedia)
+            return;
+    }
 
     auto& adm = pj::Endpoint::instance().audDevManager();
 
@@ -288,11 +264,11 @@ void SIPCall::setMicrophoneState(bool state)
     {
         if (microphoneEnabled)
         {
-            adm.getCaptureDevMedia().startTransmit(*currentAudioMedia);
+            adm.getCaptureDevMedia().startTransmit(*audioMedia);
         }
         else
         {
-            adm.getCaptureDevMedia().stopTransmit(*currentAudioMedia);
+            adm.getCaptureDevMedia().stopTransmit(*audioMedia);
         }
     }
     catch(...)
@@ -312,26 +288,31 @@ void SIPCall::playAudio(
     std::function<void()> finished
 )
 {
+    pj::AudioMedia* audioMedia = nullptr;
 
-    std::lock_guard<std::mutex> lock(mediaMutex);
-
-    if (!mediaConnected)
-        return;
-
-    if (!currentAudioMedia)
-        return;
-
-    if (path.empty())
-        return;
-
-    if (rtpPlayer.isPlaying())
     {
-        std::cout << "Audio already playing" << std::endl;
-        return;
+        std::lock_guard<std::mutex> lock(mediaMutex);
+
+        if (!mediaActive)
+            return;
+
+        audioMedia = currentAudioMedia;
+
+        if (!audioMedia)
+            return;
+
+        if (path.empty())
+            return;
+
+        if (rtpPlayer.isPlaying())
+        {
+            std::cout << "Audio already playing" << std::endl;
+            return;
+        }
     }
 
     rtpPlayer.play(
-        currentAudioMedia,
+        audioMedia,
         path,
         std::move(finished)
     );

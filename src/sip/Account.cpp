@@ -42,19 +42,43 @@ void SIPAccount::onRegState(pj::OnRegStateParam &prm)
 }
 
 
-void SIPAccount::onIncomingCall(pj::OnIncomingCallParam &iprm) 
-{ 
-    auto call = std::make_shared<SIPCall>( *this, iprm.callId );
+void SIPAccount::onIncomingCall(pj::OnIncomingCallParam& iprm)
+{
+    auto call =
+        std::make_shared<SIPCall>(
+            *this,
+            iprm.callId
+        );
 
-    pj::CallOpParam prm; prm.statusCode = PJSIP_SC_RINGING; 
+    bool accepted = false;
 
-    if (callCallback) 
-    { 
-        callCallback(call); 
+    if (callCallback)
+    {
+        accepted = callCallback(call);
     }
 
-    call->answer(prm);
-    
+    try
+    {
+        pj::CallOpParam prm;
+
+        if (accepted)
+        {
+            prm.statusCode = PJSIP_SC_RINGING;
+        }
+        else
+        {
+            prm.statusCode = PJSIP_SC_BUSY_HERE;
+        }
+
+        call->answer(prm);
+    }
+    catch (pj::Error& err)
+    {
+        std::cout
+            << "Incoming call response error: "
+            << err.info()
+            << std::endl;
+    }
 }
 
 
@@ -64,7 +88,7 @@ void SIPAccount::setStateCallback(std::function<void(const std::string&, const s
 }
 
 
-void SIPAccount::setCallCallback(std::function<void(std::shared_ptr<SIPCall>)> cb)
+void SIPAccount::setCallCallback(std::function<bool(std::shared_ptr<SIPCall>)> cb)
 {
     callCallback = cb;
 }

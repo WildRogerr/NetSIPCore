@@ -40,7 +40,7 @@ class SIPCore {
             const std::string& proxy
         );
         void disconnectAccount(const std::string& username);
-        void setupCall(const std::string& username,std::shared_ptr<SIPCall> call);
+        bool setupCall(const std::string& username,std::shared_ptr<SIPCall> call);
         void makeCall(
             const std::string& username,
             const std::string& number,
