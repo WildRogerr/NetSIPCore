@@ -433,6 +433,34 @@ void SIPCore::makeCall(
     const std::string& server
 )
 {
+    if (number.empty())
+    {
+        std::cout
+            << "CALL ERROR: empty destination number"
+            << std::endl;
+
+        sendState(
+            username,
+            "disconnected"
+        );
+
+        return;
+    }
+
+    if (server.empty())
+    {
+        std::cout
+            << "CALL ERROR: empty SIP server"
+            << std::endl;
+
+        sendState(
+            username,
+            "disconnected"
+        );
+
+        return;
+    }
+
     std::shared_ptr<SIPAccount> account;
 
     {
@@ -447,8 +475,8 @@ void SIPCore::makeCall(
     }
 
     auto call = std::make_shared<SIPCall>(
-        *account,
-        PJSUA_INVALID_ID
+    *account,
+    PJSUA_INVALID_ID
     );
 
     if (!setupCall(username, call))
@@ -481,6 +509,8 @@ void SIPCore::makeCall(
     }
     catch (pj::Error& err)
     {
+        removeCall(username, call);
+
         std::cout
             << "Call error: "
             << err.info()
@@ -584,10 +614,36 @@ void SIPCore::hangupCall(const std::string& username)
     {
         call->hangup(prm);
     }
-    catch(...)
+    catch (pj::Error& err)
     {
+        std::cout
+            << "Hangup error: "
+            << err.info()
+            << std::endl;
     }
 
+}
+
+
+void SIPCore::removeCall(
+    const std::string& username,
+    const std::shared_ptr<SIPCall>& call
+)
+{
+    std::lock_guard<std::mutex> lock(callsMutex);
+
+    auto it = calls.find(username);
+
+    if (it != calls.end() &&
+        it->second == call)
+    {
+        calls.erase(it);
+
+        std::cout
+            << "Call removed: "
+            << username
+            << std::endl;
+    }
 }
 
 

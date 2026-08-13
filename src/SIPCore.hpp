@@ -49,6 +49,10 @@ class SIPCore {
         bool ensureAudioDevice();
         void answerCall(const std::string& username);
         void hangupCall(const std::string& username);
+        void removeCall(
+            const std::string& username,
+            const std::shared_ptr<SIPCall>& call
+        );
         void processPendingStates();
         void processPendingCommands();
         void sendState(
