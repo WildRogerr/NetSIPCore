@@ -58,6 +58,7 @@ class SIPCore {
         void sendState(
             const std::string& username,
             const std::string& state,
+            const std::string& media_state,
             const std::string& remote = "",
             const std::string& audio_state = "stop"
         );
@@ -74,6 +75,7 @@ class SIPCore {
         {
             std::string username;
             std::string state;
+            std::string media_state;
             std::string remote;
             std::string audio_state;
         };

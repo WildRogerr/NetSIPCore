@@ -19,6 +19,7 @@ SIPCall::~SIPCall()
     std::cout
         << "Call destroyed"
         << std::endl;
+    rtpPlayer.stop();
 }
 
 
@@ -59,6 +60,8 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
             break;
     }
 
+    currentState = state;
+
     std::cout
         << "CALL STATE "
         << state
@@ -68,10 +71,24 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
         << info.lastReason
         << std::endl;
 
+    if (state == "disconnected")
+    {
+        rtpPlayer.stop();
+
+        {
+            std::lock_guard<std::mutex> lock(mediaMutex);
+
+            mediaActive = false;
+            currentAudioMedia = nullptr;
+            currentMediaState = "inactive";
+        }
+    }
+
     if (stateCallback)
     {
         stateCallback(
             info.localUri,
+            currentMediaState,
             state,
             info.remoteUri
         );
@@ -165,9 +182,21 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 mediaActive = true;
             }
 
+            currentMediaState = "connected";
+
             std::cout
                 << "Media connected"
                 << std::endl;
+
+            if (stateCallback)
+            {
+                stateCallback(
+                    info.localUri,
+                    currentMediaState,
+                    currentState,
+                    info.remoteUri
+                );
+            }
 
         }
 
@@ -175,16 +204,39 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 
         else
         {
+            bool wasActive = false;
 
             {
                 std::lock_guard<std::mutex> lock(mediaMutex);
-                mediaActive = false;
-                currentAudioMedia = nullptr;
+
+                if (mediaActive)
+                {
+                    mediaActive = false;
+                    currentAudioMedia = nullptr;
+                    wasActive = true;
+                }
             }
-            
+
+            if (!wasActive)
+                continue;
+
+            rtpPlayer.stop();
+
+            currentMediaState = "inactive";
+
             std::cout
                 << "Media disconnected"
                 << std::endl;
+
+            if (stateCallback)
+            {
+                stateCallback(
+                    info.localUri,
+                    currentMediaState,
+                    currentState,
+                    info.remoteUri
+                );
+            }
         }
     }
 }
@@ -276,17 +328,18 @@ void SIPCall::setMicrophoneState(bool state)
     }
 }
 
+std::string SIPCall::getMediaState()
+{
+    std::lock_guard<std::mutex> lock(mediaMutex);
+    return currentMediaState;
+}
 
 std::string SIPCall::getRemoteUri()
 {
     return getInfo().remoteUri;
 }
 
-
-void SIPCall::playAudio(
-    const std::string& path,
-    std::function<void()> finished
-)
+void SIPCall::playAudio(const std::string& path, std::function<void()> finished)
 {
     pj::AudioMedia* audioMedia = nullptr;
 
@@ -296,9 +349,7 @@ void SIPCall::playAudio(
         if (!mediaActive)
             return;
 
-        audioMedia = currentAudioMedia;
-
-        if (!audioMedia)
+        if (!currentAudioMedia)
             return;
 
         if (path.empty())
@@ -309,6 +360,8 @@ void SIPCall::playAudio(
             std::cout << "Audio already playing" << std::endl;
             return;
         }
+
+        audioMedia = currentAudioMedia;
     }
 
     rtpPlayer.play(

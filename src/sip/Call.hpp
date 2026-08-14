@@ -27,12 +27,20 @@ class SIPCall : public pj::Call
         virtual void onCallState(pj::OnCallStateParam &prm) override;
         void onCallMediaState(pj::OnCallMediaStateParam &prm) override;
         std::function<void(std::shared_ptr<pj::Call>)> incomingCallCallback;
-        std::function<void(const std::string&, const std::string&, const std::string&)> stateCallback;
+        std::function<void(
+            const std::string&,
+            const std::string&,
+            const std::string&,
+            const std::string&
+        )> stateCallback;
         int getCallId();
         void setSpeakerState(bool state);
         void setMicrophoneState(bool state);
         void playAudio(const std::string& path, std::function<void()> finished);
         std::string getRemoteUri();
+        std::string getMediaState();
+        std::string currentState{"unknown"};
+        std::string currentMediaState{"inactive"};
 
     private:
 

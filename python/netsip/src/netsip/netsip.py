@@ -115,9 +115,6 @@ class SIPManager():
             'username': number,
             'auth_username': auth,
             'password': password,
-            'audio_state': 'stop',
-            "media_state": "inactive",
-            'current_state': 'registering',
             'command': 'registration'
         }
 
@@ -342,8 +339,9 @@ class SIPManager():
                         data_json = json.loads(msg)
                         username = data_json['username']
                         state = data_json.get('state', '')
-                        audio_state = data_json.get('audio_state', 'stop')
+                        media_state = data_json.get('media_state', '')
                         remote_number = data_json.get('remote', '')
+                        audio_state = data_json.get('audio_state', 'stop')
                         client = self.clients.get(username)
 
                         if not client:
@@ -353,9 +351,9 @@ class SIPManager():
                             client['audio_state'] = audio_state
                         else:
                             client['current_state'] = state
-                            client['media_state'] = state
-                            client['audio_state'] = audio_state
+                            client['media_state'] = media_state
                             client['remote_number'] = remote_number
+                            client['audio_state'] = audio_state
                         
                         if state == "registered":
                             event = self.reg_events.get(username)

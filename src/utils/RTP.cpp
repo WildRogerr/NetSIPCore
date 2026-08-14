@@ -49,11 +49,10 @@ void RTPPlayer::play(
     if (!callMedia)
         return;
 
-    if (playing)
+    if (playing || currentTarget)
         stop();
 
-    if (player)
-        player.reset();
+    player.reset();
 
     try
     {   
@@ -101,21 +100,20 @@ void RTPPlayer::play(
 
 void RTPPlayer::stop()
 {
-    if (!playing)
+    auto* target = currentTarget;
+
+    currentTarget = nullptr;
+    playing = false;
+
+    if (!target || !player)
         return;
 
     try
     {
-        if (currentTarget)
-        {
-            player->stopTransmit(*currentTarget);
-            currentTarget = nullptr;
-        }
-        playing = false;
+        player->stopTransmit(*target);
     }
     catch (...)
     {
-        playing = false;
     }
 }
 

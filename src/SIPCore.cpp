@@ -184,6 +184,8 @@ void SIPCore::registerAccount(
             const std::string& remote
         )
         {
+            std::lock_guard<std::mutex> lock(pendingMutex);
+
             std::cout
                 << "STATE CALLBACK "
                 << username
@@ -191,11 +193,13 @@ void SIPCore::registerAccount(
                 << state
                 << std::endl;
 
-            sendState(
+            pendingStates.push({
                 username,
                 state,
-                remote
-            );
+                "",
+                remote,
+                "stop"
+            });
         }
     );
 
@@ -342,10 +346,17 @@ void SIPCore::disconnectAccount(const std::string& username)
     account.reset();
     call.reset();
 
-    sendState(
-        username,
-        "disconnected"
-    );
+    {
+        std::lock_guard<std::mutex> lock(pendingMutex);
+
+        pendingStates.push({
+            username,
+            "disconnected",
+            "inactive",
+            "",
+            "stop"
+        });
+    }
 
     std::cout
         << "Account removed: "
@@ -388,20 +399,20 @@ bool SIPCore::setupCall(const std::string& username, std::shared_ptr<SIPCall> ca
     call->stateCallback =
         [this, username](
             const std::string& local,
+            const std::string& mediaState,
             const std::string& state,
             const std::string& remote
         )
         {
-            {
-                std::lock_guard<std::mutex> lock(pendingMutex);
+            std::lock_guard<std::mutex> lock(pendingMutex);
 
-                pendingStates.push({
-                    username,
-                    state,
-                    remote,
-                    "stop"
-                });
-            }
+            pendingStates.push({
+                username,
+                state,
+                mediaState,
+                remote,
+                "stop"
+            });
 
             if (state == "disconnected")
             {
@@ -439,10 +450,17 @@ void SIPCore::makeCall(
             << "CALL ERROR: empty destination number"
             << std::endl;
 
-        sendState(
-            username,
-            "disconnected"
-        );
+        {
+            std::lock_guard<std::mutex> lock(pendingMutex);
+
+            pendingStates.push({
+                username,
+                "disconnected",
+                "inactive",
+                "",
+                "stop"
+            });
+        }
 
         return;
     }
@@ -453,10 +471,17 @@ void SIPCore::makeCall(
             << "CALL ERROR: empty SIP server"
             << std::endl;
 
-        sendState(
-            username,
-            "disconnected"
-        );
+        {
+            std::lock_guard<std::mutex> lock(pendingMutex);
+
+            pendingStates.push({
+                username,
+                "disconnected",
+                "inactive",
+                "",
+                "stop"
+            });
+        }
 
         return;
     }
@@ -512,7 +537,7 @@ void SIPCore::makeCall(
         removeCall(username, call);
 
         std::cout
-            << "Call error: "
+            << "CALL ERROR: "
             << err.info()
             << std::endl;
     }
@@ -617,7 +642,7 @@ void SIPCore::hangupCall(const std::string& username)
     catch (pj::Error& err)
     {
         std::cout
-            << "Hangup error: "
+            << "HANGUP ERROR: "
             << err.info()
             << std::endl;
     }
@@ -691,6 +716,7 @@ void SIPCore::processPendingStates()
         sendState(
             item.username,
             item.state,
+            item.media_state,
             item.remote,
             item.audio_state
         );
@@ -842,6 +868,7 @@ void SIPCore::processPendingCommands()
                     pendingStates.push({
                         username,
                         "streaming",
+                        "",
                         call->getRemoteUri(),
                         "stop"
                     });
@@ -925,10 +952,33 @@ static std::string escapeJson(const std::string& value)
 void SIPCore::sendState(
     const std::string& username,
     const std::string& state,
+    const std::string& media_state,
     const std::string& remote,
     const std::string& audio_state
 )
 {
+    std::shared_ptr<SIPCall> call;
+
+    {
+        std::lock_guard<std::mutex> lock(callsMutex);
+
+        auto it = calls.find(username);
+
+        if (it != calls.end())
+            call = it->second;
+    }
+
+    std::string actualMediaState = media_state;
+
+    if (state == "disconnected")
+    {
+        actualMediaState = "inactive";
+    }
+    else if (call)
+    {
+        actualMediaState = call->getMediaState();
+    }
+
     std::string cleanRemote;
 
     if (!remote.empty())
@@ -957,6 +1007,11 @@ void SIPCore::sendState(
         "\"username\":\"" + escapeJson(username) + "\","
         "\"state\":\"" + escapeJson(state) + "\"";
 
+    json +=
+        ",\"media_state\":\"" +
+        escapeJson(actualMediaState) +
+        "\"";
+
     if (!cleanRemote.empty())
     {
         json +=
@@ -964,7 +1019,7 @@ void SIPCore::sendState(
             escapeJson(cleanRemote) +
             "\"";
     }
-
+    
     json +=
         ",\"audio_state\":\"" +
         escapeJson(audio_state) +
