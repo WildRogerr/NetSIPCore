@@ -118,9 +118,11 @@ The remote endpoint is ringing.
 
 ## confirmed
 
-The call has been established.
+The SIP call has been successfully established.
 
-Media negotiation has completed successfully.
+The SIP dialog is confirmed, but RTP media may not be active yet.
+
+Check `media_state` to determine whether the RTP media is connected.
 
 ---
 
@@ -170,8 +172,26 @@ Possible values:
 
 | Value | Description |
 |--------|-------------|
-| stop | No RTP playback |
+| stop | No RTP WAV playback |
 | play | RTP WAV playback active |
+
+---
+
+# Media State
+
+Describes the actual RTP media connection independently
+of the SIP call state.
+
+```
+media_state
+```
+
+Possible values:
+
+| Value | Description |
+|--------|-------------|
+| inactive | RTP media is not active |
+| connected | RTP media is active |
 
 ---
 
@@ -187,12 +207,6 @@ Examples:
 
 ```
 1002
-```
-
-or
-
-```
-sip:1002@pbx.company.com
 ```
 
 This field identifies the remote party associated with the current call.

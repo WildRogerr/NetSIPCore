@@ -24,6 +24,7 @@ Example
     "username":"1001",
     "state":"registered",
     "audio_state":"stop",
+    "media_state":"inactive",
     "remote":""
 }
 ```
@@ -67,6 +68,17 @@ Possible values
 ```
 stop
 play
+```
+
+---
+
+## media_state
+
+Possible values
+
+```
+inactive
+connected
 ```
 
 ---

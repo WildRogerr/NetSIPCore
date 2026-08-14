@@ -359,6 +359,7 @@ server
 username
 current_state
 audio_state
+media_state
 remote_number
 ```
 

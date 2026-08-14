@@ -3,7 +3,7 @@
 Cross-platform SIP engine based on **PJSUA2** with a TCP JSON API and an official Python SDK.
 
 Current version:
-1.0.2
+1.1.0
 
 Supported platforms:
 
