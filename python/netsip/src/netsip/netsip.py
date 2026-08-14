@@ -116,6 +116,7 @@ class SIPManager():
             'auth_username': auth,
             'password': password,
             'audio_state': 'stop',
+            "media_state": "inactive",
             'current_state': 'registering',
             'command': 'registration'
         }
@@ -126,6 +127,7 @@ class SIPManager():
             'username': number,
             'auth_username': auth,
             'audio_state': 'stop',
+            "media_state": "inactive",
             'current_state': 'registering',
             'command': 'registration'
         }
@@ -351,6 +353,7 @@ class SIPManager():
                             client['audio_state'] = audio_state
                         else:
                             client['current_state'] = state
+                            client['media_state'] = state
                             client['audio_state'] = audio_state
                             client['remote_number'] = remote_number
                         
