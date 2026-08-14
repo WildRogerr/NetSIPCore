@@ -349,6 +349,7 @@ class SIPManager():
 
                         if state == 'registered' and client['current_state'] in ('confirmed','streaming','incoming','ringing'):
                             client['audio_state'] = audio_state
+                            client['media_state'] = media_state
                         else:
                             client['current_state'] = state
                             client['media_state'] = media_state
