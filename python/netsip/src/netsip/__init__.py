@@ -9,7 +9,7 @@
 # See LICENSE file in the project root for more information.
 #
 
-__version__ = "1.1.4"
+__version__ = "1.1.5"
 
 from .netsip import SIPManager
 
