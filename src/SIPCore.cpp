@@ -30,6 +30,8 @@ void SIPCore::init()
     ep_cfg.medConfig.channelCount = 1;
     ep_cfg.medConfig.audioFramePtime = 20;
     ep_cfg.medConfig.noVad = true;
+    ep_cfg.uaConfig.maxCalls = 10000;
+    ep_cfg.medConfig.maxMediaPorts = 12000;
     // ep_cfg.logConfig.level = 6;
     // ep_cfg.logConfig.consoleLevel = 6;
 
