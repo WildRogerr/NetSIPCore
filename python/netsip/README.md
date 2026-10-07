@@ -198,9 +198,11 @@ await sip.subscriber_registration(
     number,
     password,
     proxy,
-    auth_username
+    auth_username,
+    wait_for_registration = False
 )
 ```
+Set wait_for_registration to False if registration confirmation is not needed
 
 Disconnect account:
 
@@ -427,14 +429,14 @@ docs/
 
 ---
 
-# License
+## License
 
-NetSIP Python SDK is distributed under the GNU General Public License version 2.
+NetSIP Python library is licensed under the MIT License.
 
-See:
+See `LICENSE` for the full license text.
 
-```
-LICENSE
-```
+This package also includes NetSIPCore, a separate executable component licensed under the GNU General Public License v2.0 only (GPL-2.0-only).
 
-for the full license text.
+The source code of NetSIPCore is available at:
+
+https://github.com/WildRogerr/NetSIPCore

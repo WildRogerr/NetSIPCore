@@ -3,18 +3,10 @@
 #
 # Python library for controlling the NetSIPCore SIP engine.
 #
-# Copyright (C) 2026 WildRogerr
+# Copyright (c) 2026 WildRogerr
 #
-# This file is part of NetSIP.
-#
-# NetSIP is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License version 2
-# as published by the Free Software Foundation.
-#
-# NetSIP is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more details.
+# Licensed under the MIT License.
+# See LICENSE file in the project root for more information.
 #
 
 import asyncio
@@ -97,7 +89,8 @@ class SIPManager():
                                 number:str,
                                 password:str,
                                 proxy:str | None = None,
-                                auth_username:str | None = None
+                                auth_username:str | None = None,
+                                wait_for_registration:bool = True
                                 ):
         
         self.last_registration_state = False
@@ -132,15 +125,16 @@ class SIPManager():
         self.clients[number] = client
         await self.send_json(registration_data)
 
-        try:
-            await asyncio.wait_for(event.wait(), timeout=10)
-        except asyncio.TimeoutError:
-            print(f"❌ {number}: Registration timeout")
-            self.reg_events.pop(number, None)
-            self.clients.pop(number, None)
-            self.stop_audio = True
-            self.last_registration_state = False
-            return
+        if wait_for_registration:
+            try:
+                await asyncio.wait_for(event.wait(), timeout=10)
+            except asyncio.TimeoutError:
+                print(f"❌ {number}: Registration timeout")
+                self.reg_events.pop(number, None)
+                self.clients.pop(number, None)
+                self.stop_audio = True
+                self.last_registration_state = False
+                return
 
         self.reg_events.pop(number, None)
         self.last_registration_state = True
