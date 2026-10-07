@@ -78,7 +78,6 @@ void SIPCall::onCallState(pj::OnCallStateParam &prm)
         {
             std::lock_guard<std::mutex> lock(mediaMutex);
 
-            mediaActive = false;
             currentAudioMedia = nullptr;
             currentMediaState = "inactive";
         }
@@ -122,9 +121,6 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
             try
             {
                 std::lock_guard<std::mutex> lock(mediaMutex);
-
-                if (mediaActive)
-                    continue;
 
                 currentAudioMedia = static_cast<pj::AudioMedia*>(getMedia(i));
 
@@ -177,11 +173,6 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
                 }
             }
 
-            {
-                std::lock_guard<std::mutex> lock(mediaMutex);
-                mediaActive = true;
-            }
-
             currentMediaState = "connected";
 
             std::cout
@@ -204,25 +195,14 @@ void SIPCall::onCallMediaState(pj::OnCallMediaStateParam &prm)
 
         else
         {
-            bool wasActive = false;
-
             {
                 std::lock_guard<std::mutex> lock(mediaMutex);
 
-                if (mediaActive)
-                {
-                    mediaActive = false;
-                    currentAudioMedia = nullptr;
-                    wasActive = true;
-                }
+                currentAudioMedia = nullptr;
+                currentMediaState = "inactive";
             }
 
-            if (!wasActive)
-                continue;
-
             rtpPlayer.stop();
-
-            currentMediaState = "inactive";
 
             std::cout
                 << "Media disconnected"
@@ -261,9 +241,6 @@ void SIPCall::setSpeakerState(bool state)
 
         speakerEnabled = state;
 
-        if (!mediaActive)
-            return;
-
         audioMedia = currentAudioMedia;
 
         if (!audioMedia)
@@ -300,9 +277,6 @@ void SIPCall::setMicrophoneState(bool state)
             return;
 
         microphoneEnabled = state;
-
-        if (!mediaActive)
-            return;
         
         audioMedia = currentAudioMedia;
 
@@ -345,9 +319,6 @@ void SIPCall::playAudio(const std::string& path, std::function<void()> finished)
 
     {
         std::lock_guard<std::mutex> lock(mediaMutex);
-
-        if (!mediaActive)
-            return;
 
         if (!currentAudioMedia)
             return;
