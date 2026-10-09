@@ -177,6 +177,14 @@ class SIPManager():
         await self.send_json(client)
 
 
+    async def device_off(self,):
+        await self.send_json({"command": "device_off"})
+
+
+    async def device_on(self,):
+            await self.send_json({"command": "device_on"})
+
+
     async def mute(self, number: str):
         client = self.clients.get(number)
         if client is None:

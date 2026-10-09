@@ -245,6 +245,14 @@ await sip.hang_up(
 
 # Audio control
 
+## Audio device
+
+```python
+await sip.device_off()
+
+await sip.device_on()
+```
+
 ## Speaker
 
 ```python
