@@ -47,6 +47,8 @@ class SIPCore {
             const std::string& server
         );
         bool ensureAudioDevice();
+        void setNullAudio();
+        void setAudioDevice();
         void answerCall(const std::string& username);
         void hangupCall(const std::string& username);
         void removeCall(
@@ -109,5 +111,6 @@ class SIPCore {
         };
         std::unordered_map<std::string, DeviceState> deviceStates;
         std::mutex deviceStateMutex;
+        int nextPort = 4000;
 
 };

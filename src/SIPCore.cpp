@@ -25,12 +25,12 @@ void SIPCore::init()
     endpoint.libCreate();
 
     pj::EpConfig ep_cfg;
-    ep_cfg.medConfig.clockRate = 44100;
-    ep_cfg.medConfig.sndClockRate = 44100;
+    // ep_cfg.medConfig.clockRate = 44100;
+    // ep_cfg.medConfig.sndClockRate = 44100;
     ep_cfg.medConfig.channelCount = 1;
     ep_cfg.medConfig.audioFramePtime = 20;
     ep_cfg.medConfig.noVad = true;
-    ep_cfg.uaConfig.maxCalls = 10000;
+    ep_cfg.uaConfig.maxCalls = 4000;
     ep_cfg.medConfig.maxMediaPorts = 12000;
     // ep_cfg.logConfig.level = 6;
     // ep_cfg.logConfig.consoleLevel = 6;
@@ -236,7 +236,11 @@ void SIPCore::registerAccount(
                 "sip:" + proxy
             );
         }
-        
+		
+		config.mediaConfig.transportConfig.port = nextPort;
+		config.mediaConfig.transportConfig.portRange = 4;
+        nextPort += 6;
+
         const std::string authUser = 
             auth_username.empty() ? username : auth_username;
 
@@ -589,6 +593,71 @@ bool SIPCore::ensureAudioDevice()
 }
 
 
+void SIPCore::setNullAudio()
+{
+    try
+    {
+        endpoint.audDevManager().setNullDev();
+        nullDev = true;
+
+        std::cout
+            << "Audio device: NULL"
+            << std::endl;
+    }
+    catch (pj::Error& err)
+    {
+        std::cout
+            << "Failed to set null audio: "
+            << err.info()
+            << std::endl;
+    }
+}
+
+
+void SIPCore::setAudioDevice()
+{
+    try
+    {
+        auto& adm = endpoint.audDevManager();
+
+        adm.refreshDevs();
+        adm.setCaptureDev(PJSUA_SND_DEFAULT_CAPTURE_DEV);
+        adm.setPlaybackDev(PJSUA_SND_DEFAULT_PLAYBACK_DEV);
+
+        int captureDev = adm.getCaptureDev();
+        int playbackDev = adm.getPlaybackDev();
+
+        adm.getDevInfo(captureDev);
+        adm.getDevInfo(playbackDev);
+
+        nullDev = false;
+
+        std::cout
+            << "Audio device restored"
+            << std::endl;
+    }
+    catch (const pj::Error&)
+    {
+        std::cout
+            << "No usable audio device, switching to Null Audio Device"
+            << std::endl;
+
+        try
+        {
+            endpoint.audDevManager().setNullDev();
+            nullDev = true;
+        }
+        catch (const pj::Error& err)
+        {
+            std::cout
+                << "Failed to set Null Audio Device: "
+                << err.info()
+                << std::endl;
+        }
+    }
+}
+
+
 void SIPCore::answerCall(const std::string& username)
 {
     std::shared_ptr<SIPCall> call;
@@ -773,6 +842,16 @@ void SIPCore::processPendingCommands()
         else if (cmd.command == "hangup")
         {
             hangupCall(cmd.username);
+        }
+
+        else if (cmd.command == "device_off")
+        {
+            setNullAudio();
+        }
+
+        else if (cmd.command == "device_on")
+        {
+            setAudioDevice();
         }
 
         else if (cmd.command == "mute")

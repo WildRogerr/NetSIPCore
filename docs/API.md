@@ -107,6 +107,30 @@ Terminates current call.
 
 ---
 
+## device_off
+
+Disable the audio device.
+
+```json
+{
+    "command":"device_off"
+}
+```
+
+---
+
+## device_on
+
+Enable the default audio device.
+
+```json
+{
+    "command":"device_on"
+}
+```
+
+---
+
 ## mute
 
 Disables audio input or output for the current call.
